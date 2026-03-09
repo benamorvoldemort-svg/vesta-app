@@ -196,6 +196,7 @@ export default function WorkerPage() {
             onJobSelect={setSelectedJob}
             selectedJob={selectedJob}
             workerLocation={workerLocation}
+            onAccept={handleAccept}
           />
           <div style={{ position:'absolute', top:16, left:16, background:'rgba(250,246,241,0.95)', backdropFilter:'blur(10px)', border:'1px solid var(--border)', borderRadius:12, padding:'8px 14px', fontSize:13, display:'flex', alignItems:'center', gap:8, boxShadow:'var(--shadow)' }}>
             <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', animation:'pulse 2s infinite', display:'inline-block' }}/>
