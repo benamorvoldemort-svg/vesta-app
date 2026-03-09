@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
+import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
 import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag, Divider } from '../components/ui'
 import { Camera } from 'lucide-react'
 
@@ -32,6 +33,16 @@ export default function WorkerPage() {
     const u1 = listenAvailableBookings(setJobs)
     const u2 = listenWorkerActiveBooking(profile.uid, setActiveJob)
     return () => { u1(); u2() }
+  }, [profile])
+
+  useEffect(() => {
+    if (!profile) return
+    requestNotificationPermission(profile.uid)
+
+    const unsub = onForegroundMessage((payload) => {
+      notify(`🔔 ${payload.notification?.title || 'Nouvelle mission disponible!'}`)
+    })
+    return unsub
   }, [profile])
 
   async function handleAccept(jobId) { setLoading(true); await acceptBooking(jobId, profile.uid); setPopupJob(null); notify('Mission acceptée! 🎉'); setLoading(false) }

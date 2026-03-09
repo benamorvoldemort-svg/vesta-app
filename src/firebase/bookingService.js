@@ -2,7 +2,7 @@ import { db } from './config'
 import {
   collection, addDoc, doc, updateDoc,
   onSnapshot, query, where, orderBy,
-  serverTimestamp
+  serverTimestamp, getDocs
 } from 'firebase/firestore'
 
 export function listenAvailableBookings(cb) {
@@ -34,7 +34,21 @@ export async function createBooking(clientId, data) {
     ...data, photosBefore: [], photosAfter: [],
     createdAt: serverTimestamp()
   })
+  notifyWorkersNewBooking({ id: ref.id, clientId, ...data })
   return { id: ref.id }
+}
+
+export async function notifyWorkersNewBooking(booking) {
+  try {
+    const q = query(
+      collection(db, 'fcmTokens'),
+    )
+    const snap = await getDocs(q)
+    const tokens = snap.docs.map(d => d.data().token)
+    console.log('Workers to notify:', tokens.length)
+  } catch (err) {
+    console.error('Notify error:', err)
+  }
 }
 
 export async function acceptBooking(bookingId, workerId) {

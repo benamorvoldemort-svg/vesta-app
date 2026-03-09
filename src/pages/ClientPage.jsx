@@ -39,7 +39,7 @@ export default function ClientPage() {
     if (!form.address || !form.date) { notify('Remplis tous les champs'); return }
     setPaying(true)
     await createCheckoutSession()
-    await createBooking(profile.uid, { address:form.address, postalCode:form.postalCode, size:size.label, extras:EXTRAS.filter(e=>extras[e.key]).map(e=>e.key), price:total, date:form.date, time:form.time })
+    const booking = await createBooking(profile.uid, { address:form.address, postalCode:form.postalCode, size:size.label, extras:EXTRAS.filter(e=>extras[e.key]).map(e=>e.key), price:total, date:form.date, time:form.time })
     setStep(3); notify('Réservation confirmée! ✨'); setPaying(false)
   }
 
