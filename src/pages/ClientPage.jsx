@@ -4,6 +4,7 @@ import { createBooking, listenClientBookings } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
 const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
+import ChatDrawer from '../components/ChatDrawer'
 
 const SIZES = [{ label:'Studio', price:89 }, { label:'3½', price:109 }, { label:'4½', price:139 }, { label:'5½', price:169 }]
 const EXTRAS = [
@@ -30,6 +31,7 @@ export default function ClientPage() {
   const [form, setForm] = useState({ address:'', postalCode:'', date:'', time:'10:00' })
   const [paying, setPaying] = useState(false)
   const [toast, setToast] = useState({ show:false, msg:'' })
+  const [chatBookingId, setChatBookingId] = useState(null)
   const total = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
@@ -93,7 +95,22 @@ export default function ClientPage() {
                   <PriceTag amount={b.price} size="md" />
                   {b.extras?.length>0 && <span style={{ fontSize:11, color:'var(--text-dim)' }}>{b.extras.join(' · ')}</span>}
                 </div>
-                {b.status!=='Completed' && <><Divider /><StatusTracker steps={STEPS} currentStatus={b.status} /></>}
+                {b.status!=='Completed' && <><Divider /><StatusTracker steps={STEPS} currentStatus={b.status} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setChatBookingId(b.id) }}
+                    style={{
+                      marginTop: 12, width: '100%', padding: '10px', borderRadius: 8,
+                      border: '1px solid var(--border)', background: 'var(--bg-input)',
+                      color: 'var(--text)', fontSize: 13, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = 'var(--brown)'}
+                    onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                  >
+                    💬 Contacter le travailleur
+                  </button>
+                </>}
                 {b.status==='Completed' && (
                   <><Divider />
                     <div style={{ textAlign:'center' }}>
@@ -210,6 +227,13 @@ export default function ClientPage() {
           </div>
         )}
       </div>
+      {chatBookingId && (
+        <ChatDrawer
+          bookingId={chatBookingId}
+          profile={profile}
+          onClose={() => setChatBookingId(null)}
+        />
+      )}
       <Toast message={toast.msg} show={toast.show}/>
     </div>
   )

@@ -5,6 +5,7 @@ import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
 import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag } from '../components/ui'
 import VestaMap from '../components/VestaMap'
+import ChatDrawer from '../components/ChatDrawer'
 import { Camera, List, Map } from 'lucide-react'
 
 const STEPS = [
@@ -26,6 +27,7 @@ export default function WorkerPage() {
   const [photoAfter, setPhotoAfter] = useState(0)
   const [workerLocation, setWorkerLocation] = useState(null)
   const [mobileView, setMobileView] = useState('list') // 'list' or 'map'
+  const [showChat, setShowChat] = useState(false)
 
   function notify(msg) { setToast({ show:true, msg }); setTimeout(()=>setToast({ show:false, msg:'' }), 3000) }
 
@@ -138,6 +140,18 @@ export default function WorkerPage() {
             <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{activeJob.size}</p>
           </div>
 
+          <button
+            onClick={() => setShowChat(true)}
+            style={{
+              width: '100%', padding: '12px', borderRadius: 10,
+              border: '1px solid var(--border)', background: 'var(--bg-input)',
+              color: 'var(--text)', fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              marginBottom: 16, fontWeight: 500,
+            }}>
+            💬 Chat avec le client
+          </button>
+
           <SectionLabel>Étapes</SectionLabel>
           <StatusTracker steps={STEPS} currentStatus={missionStatus}/>
 
@@ -198,6 +212,14 @@ export default function WorkerPage() {
             onAccept={handleAccept}
           />
         </div>
+      )}
+
+      {showChat && activeJob && (
+        <ChatDrawer
+          bookingId={activeJob.id}
+          profile={profile}
+          onClose={() => setShowChat(false)}
+        />
       )}
 
       <Toast message={toast.msg} show={toast.show}/>
