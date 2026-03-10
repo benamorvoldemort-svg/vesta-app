@@ -111,19 +111,21 @@ export function Toast({ message, show }) {
   )
 }
 
-export function Header({ onLogout, userName, role }) {
+export function Header({ userName, onLogout, role }) {
   return (
-    <header style={{background:'rgba(250,246,241,0.95)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--border)',position:'sticky',top:0,zIndex:100,padding:'0 24px',height:58,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-      <div style={{display:'flex',alignItems:'baseline',gap:8}}>
-        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:600,fontStyle:'italic',color:'var(--brown)',letterSpacing:'-0.02em'}}>Vesta Home</span>
-        {role && <span style={{fontSize:11,color:'var(--text-dim)',fontWeight:500,letterSpacing:'0.06em',textTransform:'uppercase'}}>{role}</span>}
+    <header style={{
+      background: 'var(--bg-card)', borderBottom: '1px solid var(--border)',
+      padding: '0 16px', height: 52, display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', flexShrink: 0, gap: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 600, fontStyle: 'italic', color: 'var(--brown)', whiteSpace: 'nowrap' }}>Vesta</span>
+        {role && <span style={{ fontSize: 10, color: 'var(--text-dim)', background: 'var(--bg-section)', padding: '2px 8px', borderRadius: 20, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{role}</span>}
       </div>
-      <div style={{display:'flex',alignItems:'center',gap:14}}>
-        {userName && <span style={{fontSize:13,color:'var(--text-muted)'}}>{userName}</span>}
-        <button onClick={onLogout} style={{background:'var(--bg-section)',border:'1px solid var(--border)',borderRadius:8,padding:'6px 14px',color:'var(--text-muted)',fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.2s'}}
-          onMouseOver={e=>{e.currentTarget.style.borderColor='var(--brown)';e.currentTarget.style.color='var(--brown)'}}
-          onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--text-muted)'}}>
-          Déconnexion
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        {userName && <span style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{userName}</span>}
+        <button onClick={onLogout} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          Déco
         </button>
       </div>
     </header>

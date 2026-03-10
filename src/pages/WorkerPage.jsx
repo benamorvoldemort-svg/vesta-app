@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
-import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag, Divider } from '../components/ui'
+import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag } from '../components/ui'
 import VestaMap from '../components/VestaMap'
-import { Camera } from 'lucide-react'
+import { Camera, List, Map } from 'lucide-react'
 
 const STEPS = [
   { key:'Assigned',     label:'Mission acceptée',  desc:"En route vers l'adresse" },
@@ -25,10 +25,10 @@ export default function WorkerPage() {
   const [photoBefore, setPhotoBefore] = useState(0)
   const [photoAfter, setPhotoAfter] = useState(0)
   const [workerLocation, setWorkerLocation] = useState(null)
+  const [mobileView, setMobileView] = useState('list') // 'list' or 'map'
 
   function notify(msg) { setToast({ show:true, msg }); setTimeout(()=>setToast({ show:false, msg:'' }), 3000) }
 
-  // Get worker GPS location
   useEffect(() => {
     if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
@@ -48,12 +48,11 @@ export default function WorkerPage() {
     if (!profile) return
     requestNotificationPermission(profile.uid)
     const unsub = onForegroundMessage((payload) => {
-      notify(`🔔 ${payload.notification?.title || 'Nouvelle mission disponible!'}`)
+      notify(`🔔 ${payload.notification?.title || 'Nouvelle mission!'}`)
     })
     return unsub
   }, [profile])
 
-  // Allow map popup to trigger accept
   useEffect(() => {
     window.vestaTakeJob = (jobId) => handleAccept(jobId)
     return () => delete window.vestaTakeJob
@@ -63,6 +62,7 @@ export default function WorkerPage() {
     setLoading(true)
     await acceptBooking(jobId, profile.uid)
     setSelectedJob(null)
+    setMobileView('list')
     notify('Mission acceptée! 🎉')
     setLoading(false)
   }
@@ -77,13 +77,13 @@ export default function WorkerPage() {
   async function handlePhotoBefore() {
     const n = photoBefore + 1; setPhotoBefore(n)
     await updateBookingPhotos(activeJob.id, 'photosBefore', Array(n).fill('mock'))
-    notify(`Photo AVANT ajoutée (${n}) 📸`)
+    notify(`Photo AVANT (${n}) 📸`)
   }
 
   async function handlePhotoAfter() {
     const n = photoAfter + 1; setPhotoAfter(n)
     await updateBookingPhotos(activeJob.id, 'photosAfter', Array(n).fill('mock'))
-    notify(`Photo APRÈS ajoutée (${n}) 📸`)
+    notify(`Photo APRÈS (${n}) 📸`)
   }
 
   async function handleComplete() {
@@ -111,99 +111,95 @@ export default function WorkerPage() {
     <div style={{ height:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
       <Header userName={profile?.displayName} onLogout={logoutUser} role="Travailleur" />
 
-      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-
-        {/* Sidebar */}
-        <div style={{ width:320, flexShrink:0, background:'var(--bg-card)', borderRight:'1px solid var(--border)', overflowY:'auto', display:'flex', flexDirection:'column' }}>
-
-          {activeJob && (
-            <div style={{ padding:16, borderBottom:'1px solid var(--border)' }}>
-              <div style={{ background:'var(--brown-light)', border:'1px solid rgba(184,147,90,0.3)', borderRadius:'var(--radius)', padding:16, marginBottom:16 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                  <span style={{ fontSize:11, color:'var(--brown)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', display:'inline-block', animation:'pulse 1.5s infinite' }}/>
-                    Mission active
-                  </span>
-                  <PriceTag amount={activeJob.price} size="md"/>
-                </div>
-                <p style={{ fontWeight:600, fontSize:14, color:'var(--text)' }}>{activeJob.address}</p>
-                <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{activeJob.size}</p>
-              </div>
-              <SectionLabel>Étapes</SectionLabel>
-              <StatusTracker steps={STEPS} currentStatus={missionStatus}/>
-              <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:8 }}>
-                {activeJob.status==='Assigned' && <>
-                  <button onClick={handlePhotoBefore} style={{ width:'100%', padding:'10px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13, transition:'all 0.2s' }}
-                    onMouseOver={e=>e.currentTarget.style.borderColor='var(--brown)'}
-                    onMouseOut={e=>e.currentTarget.style.borderColor='var(--border)'}>
-                    <Camera size={14}/>Photos AVANT ({photoBefore} prises)
-                  </button>
-                  {photoBefore>0 && <Button onClick={handleStart} loading={loading}>🧹 Commencer le ménage</Button>}
-                </>}
-                {activeJob.status==='InProgress' && <>
-                  <button onClick={handlePhotoAfter} style={{ width:'100%', padding:'10px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13, transition:'all 0.2s' }}
-                    onMouseOver={e=>e.currentTarget.style.borderColor='var(--brown)'}
-                    onMouseOut={e=>e.currentTarget.style.borderColor='var(--border)'}>
-                    <Camera size={14}/>Photos APRÈS ({photoAfter} prises)
-                  </button>
-                  {photoAfter>0 && <Button onClick={handleComplete} loading={loading}>✅ Terminer la mission</Button>}
-                </>}
-              </div>
-            </div>
-          )}
-
-          {!activeJob && (
-            <div style={{ flex:1 }}>
-              <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)' }}>
-                <p style={{ fontSize:11, color:'var(--brown)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>
-                  {jobs.length} mission{jobs.length!==1?'s':''} disponible{jobs.length!==1?'s':''}
-                </p>
-                <p style={{ fontSize:11, color:'var(--text-dim)', marginTop:2 }}>Clique sur un marqueur sur la carte</p>
-              </div>
-              <div style={{ padding:12, display:'flex', flexDirection:'column', gap:8 }}>
-                {jobs.length===0 ? (
-                  <div style={{ textAlign:'center', padding:'48px 16px' }}>
-                    <p style={{ fontSize:36, marginBottom:12 }}>🔍</p>
-                    <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:20, marginBottom:4 }}>Aucune mission</p>
-                    <p style={{ color:'var(--text-muted)', fontSize:13 }}>Nouvelles demandes en temps réel</p>
-                  </div>
-                ) : jobs.map((job) => (
-                  <Card key={job.id} onClick={()=>setSelectedJob(selectedJob?.id===job.id?null:job)}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-                      <p style={{ fontWeight:600, fontSize:13 }}>{job.address}</p>
-                      <Badge variant="gold">Nouveau</Badge>
-                    </div>
-                    <div style={{ display:'flex', gap:12, fontSize:11, color:'var(--text-muted)', marginBottom:10 }}>
-                      <span>🏠 {job.size}</span><span>📅 {job.date}</span><span>⏰ {job.time}</span>
-                    </div>
-                    <PriceTag amount={job.price} size="md"/>
-                    {selectedJob?.id===job.id && (
-                      <div style={{ marginTop:10 }}>
-                        <Button onClick={()=>handleAccept(job.id)} loading={loading}>✅ Accepter la mission</Button>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Mobile tab switcher — only shown when no active job */}
+      {!activeJob && (
+        <div style={{ display:'flex', background:'var(--bg-card)', borderBottom:'1px solid var(--border)', padding:'6px 12px', gap:8 }}>
+          <button onClick={() => setMobileView('list')} style={{ flex:1, padding:'8px', borderRadius:8, border:'none', background: mobileView==='list' ? 'var(--brown)' : 'var(--bg-section)', color: mobileView==='list' ? 'white' : 'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <List size={14}/> Liste ({jobs.length})
+          </button>
+          <button onClick={() => setMobileView('map')} style={{ flex:1, padding:'8px', borderRadius:8, border:'none', background: mobileView==='map' ? 'var(--brown)' : 'var(--bg-section)', color: mobileView==='map' ? 'white' : 'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <Map size={14}/> Carte
+          </button>
         </div>
+      )}
 
-        {/* Google Map */}
+      {/* Active job panel */}
+      {activeJob && (
+        <div style={{ flex:1, overflowY:'auto', padding:16 }}>
+          <div style={{ background:'var(--brown-light)', border:'1px solid rgba(184,147,90,0.3)', borderRadius:'var(--radius)', padding:16, marginBottom:16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+              <span style={{ fontSize:11, color:'var(--brown)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', display:'inline-block' }}/>
+                Mission active
+              </span>
+              <PriceTag amount={activeJob.price} size="md"/>
+            </div>
+            <p style={{ fontWeight:600, fontSize:15, color:'var(--text)' }}>{activeJob.address}</p>
+            <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{activeJob.size}</p>
+          </div>
+
+          <SectionLabel>Étapes</SectionLabel>
+          <StatusTracker steps={STEPS} currentStatus={missionStatus}/>
+
+          <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
+            {activeJob.status==='Assigned' && <>
+              <button onClick={handlePhotoBefore} style={{ width:'100%', padding:'14px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:14, fontWeight:500 }}>
+                <Camera size={16}/>Photos AVANT ({photoBefore} prises)
+              </button>
+              {photoBefore>0 && <Button onClick={handleStart} loading={loading}>🧹 Commencer le ménage</Button>}
+            </>}
+            {activeJob.status==='InProgress' && <>
+              <button onClick={handlePhotoAfter} style={{ width:'100%', padding:'14px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:14, fontWeight:500 }}>
+                <Camera size={16}/>Photos APRÈS ({photoAfter} prises)
+              </button>
+              {photoAfter>0 && <Button onClick={handleComplete} loading={loading}>✅ Terminer la mission</Button>}
+            </>}
+          </div>
+        </div>
+      )}
+
+      {/* List view */}
+      {!activeJob && mobileView==='list' && (
+        <div style={{ flex:1, overflowY:'auto', padding:12 }}>
+          {jobs.length===0 ? (
+            <div style={{ textAlign:'center', padding:'64px 16px' }}>
+              <p style={{ fontSize:40, marginBottom:12 }}>🔍</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:22, marginBottom:6 }}>Aucune mission</p>
+              <p style={{ color:'var(--text-muted)', fontSize:13 }}>Nouvelles demandes en temps réel</p>
+            </div>
+          ) : jobs.map((job) => (
+            <Card key={job.id} onClick={()=>setSelectedJob(selectedJob?.id===job.id?null:job)} style={{ marginBottom:10 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                <p style={{ fontWeight:600, fontSize:14 }}>{job.address}</p>
+                <Badge variant="gold">Nouveau</Badge>
+              </div>
+              <div style={{ display:'flex', gap:12, fontSize:12, color:'var(--text-muted)', marginBottom:10, flexWrap:'wrap' }}>
+                <span>🏠 {job.size}</span><span>📅 {job.date}</span><span>⏰ {job.time}</span>
+              </div>
+              <PriceTag amount={job.price} size="md"/>
+              {selectedJob?.id===job.id && (
+                <div style={{ marginTop:12 }}>
+                  <Button onClick={()=>handleAccept(job.id)} loading={loading}>✅ Accepter la mission</Button>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Map view */}
+      {!activeJob && mobileView==='map' && (
         <div style={{ flex:1, position:'relative' }}>
           <VestaMap
             jobs={jobs}
-            onJobSelect={setSelectedJob}
+            onJobSelect={(job) => { setSelectedJob(job); setMobileView('list') }}
             selectedJob={selectedJob}
             workerLocation={workerLocation}
             onAccept={handleAccept}
           />
-          <div style={{ position:'absolute', top:16, left:16, background:'rgba(250,246,241,0.95)', backdropFilter:'blur(10px)', border:'1px solid var(--border)', borderRadius:12, padding:'8px 14px', fontSize:13, display:'flex', alignItems:'center', gap:8, boxShadow:'var(--shadow)' }}>
-            <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', animation:'pulse 2s infinite', display:'inline-block' }}/>
-            <span style={{ color:'var(--text-muted)', fontWeight:500 }}>Griffintown, Montréal</span>
-          </div>
         </div>
-      </div>
+      )}
+
       <Toast message={toast.msg} show={toast.show}/>
     </div>
   )
