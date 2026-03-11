@@ -77,17 +77,7 @@ export default function WorkerPage() {
     setLoading(false)
   }
 
-  async function handlePhotoBefore() {
-    const n = photoBefore + 1; setPhotoBefore(n)
-    await updateBookingPhotos(activeJob.id, 'photosBefore', Array(n).fill('mock'))
-    notify(`Photo AVANT (${n}) 📸`)
-  }
 
-  async function handlePhotoAfter() {
-    const n = photoAfter + 1; setPhotoAfter(n)
-    await updateBookingPhotos(activeJob.id, 'photosAfter', Array(n).fill('mock'))
-    notify(`Photo APRÈS (${n}) 📸`)
-  }
 
   async function handleComplete() {
     setLoading(true)
