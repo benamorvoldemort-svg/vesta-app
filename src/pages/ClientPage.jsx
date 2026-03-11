@@ -111,6 +111,38 @@ export default function ClientPage() {
                     💬 Contacter le travailleur
                   </button>
                 </>}
+                {(b.photosBefore?.length > 0 || b.photosAfter?.length > 0) && (
+                  <div style={{ marginTop: 12 }}>
+                    {b.photosBefore?.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--brown)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                          Photos AVANT ({b.photosBefore.length})
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                          {b.photosBefore.map((url, i) => (
+                            <div key={i} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                              <img src={url} alt={`avant-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {b.photosAfter?.length > 0 && (
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--brown)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                          Photos APRÈS ({b.photosAfter.length})
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                          {b.photosAfter.map((url, i) => (
+                            <div key={i} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                              <img src={url} alt={`après-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {b.status==='Completed' && (
                   <><Divider />
                     <div style={{ textAlign:'center' }}>

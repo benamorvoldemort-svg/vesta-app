@@ -6,6 +6,7 @@ import { requestNotificationPermission, onForegroundMessage } from '../firebase/
 import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag } from '../components/ui'
 import VestaMap from '../components/VestaMap'
 import ChatDrawer from '../components/ChatDrawer'
+import PhotoUploader from '../components/PhotoUploader'
 import { Camera, List, Map } from 'lucide-react'
 
 const STEPS = [
@@ -157,16 +158,28 @@ export default function WorkerPage() {
 
           <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
             {activeJob.status==='Assigned' && <>
-              <button onClick={handlePhotoBefore} style={{ width:'100%', padding:'14px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:14, fontWeight:500 }}>
-                <Camera size={16}/>Photos AVANT ({photoBefore} prises)
-              </button>
-              {photoBefore>0 && <Button onClick={handleStart} loading={loading}>🧹 Commencer le ménage</Button>}
+              <PhotoUploader
+                label="Photos AVANT"
+                photos={activeJob.photosBefore || []}
+                onPhotosChange={async (urls) => {
+                  await updateBookingPhotos(activeJob.id, 'photosBefore', urls)
+                }}
+              />
+              {(activeJob.photosBefore?.length > 0) && (
+                <Button onClick={handleStart} loading={loading}>🧹 Commencer le ménage</Button>
+              )}
             </>}
             {activeJob.status==='InProgress' && <>
-              <button onClick={handlePhotoAfter} style={{ width:'100%', padding:'14px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:14, fontWeight:500 }}>
-                <Camera size={16}/>Photos APRÈS ({photoAfter} prises)
-              </button>
-              {photoAfter>0 && <Button onClick={handleComplete} loading={loading}>✅ Terminer la mission</Button>}
+              <PhotoUploader
+                label="Photos APRÈS"
+                photos={activeJob.photosAfter || []}
+                onPhotosChange={async (urls) => {
+                  await updateBookingPhotos(activeJob.id, 'photosAfter', urls)
+                }}
+              />
+              {(activeJob.photosAfter?.length > 0) && (
+                <Button onClick={handleComplete} loading={loading}>✅ Terminer la mission</Button>
+              )}
             </>}
           </div>
         </div>
