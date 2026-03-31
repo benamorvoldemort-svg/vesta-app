@@ -102,7 +102,7 @@ export default function WorkerPage() {
 
   return (
     <div style={{ height:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
-      <Header userName={profile?.displayName} onLogout={logoutUser} role="Travailleur" />
+      <Header userName={profile?.displayName} onLogout={logoutUser} role="Prestataire" />
 
       {/* Mobile tab switcher — only shown when no active job */}
       {!activeJob && (
