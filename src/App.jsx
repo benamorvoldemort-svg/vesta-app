@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import AuthPage from './pages/AuthPage'
+import ProtectedRoute from './components/ProtectedRoute'
+import LoginPage from './pages/LoginPage'
 import ClientPage from './pages/ClientPage'
-import WorkerPage from './pages/WorkerPage'
-import AdminPage from './pages/AdminPage'
+import PrestatairePage from './pages/PrestatairePage'
 import LandingPage from './pages/LandingPage'
+
+function HomeRedirect() {
+  const { profile, loading } = useAuth()
+  if (loading) return null
+  if (profile?.role === 'client') return <Navigate to="/dashboard/client" replace />
+  if (profile?.role === 'prestataire') return <Navigate to="/dashboard/prestataire" replace />
+  return <Navigate to="/home" replace />
+}
 
 function Router() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -22,30 +30,39 @@ function Router() {
   async function handleInstall() {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
+    await deferredPrompt.userChoice
     setDeferredPrompt(null)
     setShowInstall(false)
   }
 
-  const { profile, loading } = useAuth()
-  if (loading) return <div style={{minHeight:'100vh',background:'#0d1b2a',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{width:32,height:32,border:'2px solid #243a52',borderTop:'2px solid #0abf8f',borderRadius:'50%',animation:'spin 1s linear infinite'}}/></div>
-  if (!profile) return (
-    <Routes>
-      <Route path="/home" element={<LandingPage/>}/>
-      <Route path="/auth" element={<AuthPage/>}/>
-      <Route path="*" element={<LandingPage/>}/>
-    </Routes>
-  )
-  const home = profile.role==='worker'?'/worker':profile.role==='admin'?'/admin':'/'
   return (
     <>
       <Routes>
-        <Route path="/home" element={<LandingPage/>}/>
-        <Route path="/" element={profile.role==='client'?<ClientPage/>:<Navigate to={home}/>}/>
-        <Route path="/worker" element={profile.role==='worker'?<WorkerPage/>:<Navigate to={home}/>}/>
-        <Route path="/admin" element={profile.role==='admin'?<AdminPage/>:<Navigate to={home}/>}/>
-        <Route path="*" element={<Navigate to={home}/>}/>
+        <Route path="/home" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          path="/dashboard/client"
+          element={
+            <ProtectedRoute requiredRole="client">
+              <ClientPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/prestataire"
+          element={
+            <ProtectedRoute requiredRole="prestataire">
+              <PrestatairePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="*" element={<HomeRedirect />} />
       </Routes>
+
       {showInstall && (
         <div style={{
           position: 'fixed', bottom: 24, left: 16, right: 16, zIndex: 9999,
@@ -71,6 +88,13 @@ function Router() {
     </>
   )
 }
+
 export default function App() {
-  return <BrowserRouter><AuthProvider><Router/></AuthProvider></BrowserRouter>
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Router />
+      </AuthProvider>
+    </BrowserRouter>
+  )
 }
