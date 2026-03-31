@@ -46,12 +46,12 @@ export default function LandingPage() {
           Vesta Home
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate('/auth')} style={{ padding: '9px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+          <button onClick={() => navigate('/login')} style={{ padding: '9px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseOver={e => e.currentTarget.style.borderColor = 'var(--brown)'}
             onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}>
             Connexion
           </button>
-          <button onClick={() => navigate('/auth')} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 10px rgba(184,147,90,0.3)', transition: 'all 0.2s' }}
+          <button onClick={() => navigate('/login')} style={{ padding: '9px 20px', borderRadius: 10, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 10px rgba(184,147,90,0.3)', transition: 'all 0.2s' }}
             onMouseOver={e => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseOut={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)' }}>
             Réserver maintenant
@@ -83,7 +83,7 @@ export default function LandingPage() {
             Réservez un ménage professionnel en 2 minutes. Des travailleurs vérifiés de votre quartier, disponibles 7 jours sur 7.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/auth')} style={{ padding: '16px 36px', borderRadius: 12, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,147,90,0.35)', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
+            <button onClick={() => navigate('/login')} style={{ padding: '16px 36px', borderRadius: 12, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,147,90,0.35)', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
               onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(184,147,90,0.4)' }}
               onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(184,147,90,0.35)' }}>
               Réserver maintenant →
@@ -192,7 +192,7 @@ export default function LandingPage() {
           <p style={{ color: 'var(--text-muted)', fontSize: 16, lineHeight: 1.7, marginBottom: 40 }}>
             Rejoignez +200 résidents de Griffintown qui font confiance à Vesta.
           </p>
-          <button onClick={() => navigate('/auth')} style={{ padding: '18px 48px', borderRadius: 12, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,147,90,0.35)', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
+          <button onClick={() => navigate('/login')} style={{ padding: '18px 48px', borderRadius: 12, border: 'none', background: 'var(--brown)', color: 'white', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,147,90,0.35)', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
             onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(184,147,90,0.4)' }}
             onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(184,147,90,0.35)' }}>
             Réserver mon premier ménage →
