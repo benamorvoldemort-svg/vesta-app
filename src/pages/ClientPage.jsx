@@ -15,8 +15,8 @@ const EXTRAS = [
   { key:'petHair', label:"Poils d'animaux", icon:'🐾', price:10 },
 ]
 const STEPS = [
-  { key:'Requested',  label:'Demande créée',      desc:"Recherche d'un travailleur..." },
-  { key:'Assigned',   label:'Travailleur assigné', desc:'En route vers vous' },
+  { key:'Requested',  label:'Demande créée',      desc:"Recherche d'un prestataire..." },
+  { key:'Assigned',   label:'Prestataire assigné', desc:'En route vers vous' },
   { key:'InProgress', label:'Ménage en cours',     desc:'Nettoyage en cours ✨' },
   { key:'Completed',  label:'Mission complétée',   desc:'Terminé! 🎉' },
 ]
@@ -118,7 +118,7 @@ export default function ClientPage() {
                     onMouseOver={e => e.currentTarget.style.borderColor = 'var(--brown)'}
                     onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
-                    💬 Contacter le travailleur
+                    💬 Contacter le prestataire
                   </button>
                 </>}
                 {(b.photosBefore?.length > 0 || b.photosAfter?.length > 0) && (
@@ -262,7 +262,7 @@ export default function ClientPage() {
               <Card style={{ textAlign:'center', padding:'56px 24px', border:'1px solid rgba(184,147,90,0.3)' }}>
                 <div style={{ width:72, height:72, borderRadius:'50%', background:'var(--brown-light)', border:'1.5px solid var(--brown)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 20px' }}>✨</div>
                 <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:28, marginBottom:10 }}>Réservation confirmée!</h3>
-                <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom:28, lineHeight:1.6 }}>Votre demande est transmise aux travailleurs disponibles à Griffintown.</p>
+                <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom:28, lineHeight:1.6 }}>Votre demande est transmise aux prestataires disponibles à Griffintown.</p>
                 <Button onClick={reset}>Voir mes réservations</Button>
               </Card>
             )}
