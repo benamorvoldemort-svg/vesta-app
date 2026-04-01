@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
+import { listenPrestataireReviews } from '../firebase/reviewService'
 import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
 import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceTag } from '../components/ui'
@@ -29,6 +30,7 @@ export default function WorkerPage() {
   const [workerLocation, setWorkerLocation] = useState(null)
   const [mobileView, setMobileView] = useState('list') // 'list' or 'map'
   const [showChat, setShowChat] = useState(false)
+  const [reviews, setReviews] = useState([])
 
   function notify(msg) { setToast({ show:true, msg }); setTimeout(()=>setToast({ show:false, msg:'' }), 3000) }
 
@@ -44,7 +46,8 @@ export default function WorkerPage() {
     if (!profile) return
     const u1 = listenAvailableBookings(setJobs)
     const u2 = listenWorkerActiveBooking(profile.uid, setActiveJob)
-    return () => { u1(); u2() }
+    const u3 = listenPrestataireReviews(profile.uid, setReviews)
+    return () => { u1(); u2(); u3() }
   }, [profile])
 
   useEffect(() => {
@@ -103,6 +106,16 @@ export default function WorkerPage() {
   return (
     <div style={{ height:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
       <Header userName={profile?.displayName} onLogout={logoutUser} role="Prestataire" />
+      {reviews.length > 0 && (() => {
+        const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+        return (
+          <div style={{ background: 'var(--brown-light)', borderBottom: '1px solid rgba(184,147,90,0.2)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--brown)', fontSize: 15 }}>{'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--brown)' }}>{avg}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({reviews.length} avis)</span>
+          </div>
+        )
+      })()}
 
       {/* Mobile tab switcher — only shown when no active job */}
       {!activeJob && (

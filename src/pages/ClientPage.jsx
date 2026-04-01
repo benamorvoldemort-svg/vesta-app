@@ -6,6 +6,7 @@ import { logoutUser } from '../firebase/authService'
 const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
 import ChatDrawer from '../components/ChatDrawer'
+import ReviewModal from '../components/ReviewModal'
 
 const SIZES = [{ label:'Studio', price:89 }, { label:'3½', price:109 }, { label:'4½', price:139 }, { label:'5½', price:169 }]
 const EXTRAS = [
@@ -34,6 +35,7 @@ export default function ClientPage() {
   const [paying, setPaying] = useState(false)
   const [toast, setToast] = useState({ show:false, msg:'' })
   const [chatBookingId, setChatBookingId] = useState(null)
+  const [reviewBooking, setReviewBooking] = useState(null)
   const total = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
@@ -159,6 +161,22 @@ export default function ClientPage() {
                       <p style={{ color:'var(--brown)', fontSize:18, letterSpacing:4 }}>★★★★★</p>
                       <p style={{ fontSize:11, color:'var(--text-dim)', marginTop:4 }}>Mission complétée avec succès</p>
                     </div>
+                    {!b.reviewed && (
+                      <div style={{ marginTop: 12 }}>
+                        <button
+                          onClick={() => setReviewBooking(b)}
+                          style={{
+                            width: '100%', padding: '11px', borderRadius: 'var(--radius-sm)',
+                            border: '1.5px solid var(--brown)', background: 'var(--brown-light)',
+                            color: 'var(--brown)', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = 'var(--brown)' || (e.currentTarget.style.color = 'white')}
+                          onMouseOut={e => { e.currentTarget.style.background = 'var(--brown-light)'; e.currentTarget.style.color = 'var(--brown)' }}>
+                          ★ Laisser un avis
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </Card>
@@ -274,6 +292,13 @@ export default function ClientPage() {
           bookingId={chatBookingId}
           profile={profile}
           onClose={() => setChatBookingId(null)}
+        />
+      )}
+      {reviewBooking && (
+        <ReviewModal
+          booking={reviewBooking}
+          clientId={profile.uid}
+          onClose={() => setReviewBooking(null)}
         />
       )}
       <Toast message={toast.msg} show={toast.show}/>
