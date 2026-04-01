@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loginUser, registerUser } from '../firebase/authService'
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { auth } from '../firebase/config'
 import { Button, Input, Card } from '../components/ui'
 
 export default function LoginPage() {
@@ -9,6 +11,10 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', displayName: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showReset, setShowReset] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetStatus, setResetStatus] = useState(null) // 'success' | 'error'
+  const [resetLoading, setResetLoading] = useState(false)
   const navigate = useNavigate()
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -24,6 +30,20 @@ export default function LoginPage() {
       }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
+  }
+
+  async function handleReset() {
+    if (!resetEmail.trim()) return
+    setResetLoading(true)
+    setResetStatus(null)
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim())
+      setResetStatus('success')
+    } catch (e) {
+      setResetStatus('error')
+    } finally {
+      setResetLoading(false)
+    }
   }
 
   return (
@@ -42,7 +62,7 @@ export default function LoginPage() {
         <Card>
           <div style={{ display:'flex', background:'var(--bg-section)', borderRadius:'var(--radius-sm)', padding:3, marginBottom:20 }}>
             {['login', 'signup'].map(m => (
-              <button key={m} onClick={() => setMode(m)} style={{
+              <button key={m} onClick={() => { setMode(m); setShowReset(false); setResetStatus(null) }} style={{
                 flex:1, padding:'9px', borderRadius:8, border:'none',
                 background: mode===m ? 'var(--bg-card)' : 'transparent',
                 color: mode===m ? 'var(--text)' : 'var(--text-muted)',
@@ -77,7 +97,59 @@ export default function LoginPage() {
           )}
 
           <Input label="Courriel" type="email" placeholder="vous@email.com" value={form.email} onChange={e => set('email', e.target.value)} />
-          <Input label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => set('password', e.target.value)} />
+
+          {!showReset && (
+            <>
+              <Input label="Mot de passe" type="password" placeholder="••••••••" value={form.password} onChange={e => set('password', e.target.value)} />
+
+              {mode === 'login' && (
+                <div style={{ textAlign:'right', marginTop:-8, marginBottom:14 }}>
+                  <button
+                    onClick={() => { setShowReset(true); setResetEmail(form.email); setResetStatus(null) }}
+                    style={{ background:'none', border:'none', color:'var(--brown)', fontSize:12, cursor:'pointer', padding:0, fontFamily:"'DM Sans',sans-serif" }}>
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {showReset && (
+            <div style={{ marginBottom:14, padding:'16px', borderRadius:'var(--radius-sm)', background:'var(--bg-section)', border:'1px solid var(--border)' }}>
+              <p style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:10 }}>Réinitialiser le mot de passe</p>
+              <Input
+                label="Adresse courriel"
+                type="email"
+                placeholder="vous@email.com"
+                value={resetEmail}
+                onChange={e => { setResetEmail(e.target.value); setResetStatus(null) }}
+              />
+
+              {resetStatus === 'success' && (
+                <div style={{ padding:'10px 14px', borderRadius:8, background:'var(--green-light)', border:'1px solid rgba(107,158,120,0.3)', marginBottom:12 }}>
+                  <p style={{ fontSize:12, color:'var(--green)' }}>Un lien de réinitialisation a été envoyé à votre adresse email.</p>
+                </div>
+              )}
+              {resetStatus === 'error' && (
+                <div style={{ padding:'10px 14px', borderRadius:8, background:'var(--red-light)', border:'1px solid rgba(192,97,79,0.2)', marginBottom:12 }}>
+                  <p style={{ fontSize:12, color:'var(--red)' }}>Aucun compte trouvé pour cette adresse email.</p>
+                </div>
+              )}
+
+              <div style={{ display:'flex', gap:8 }}>
+                <button
+                  onClick={() => { setShowReset(false); setResetStatus(null) }}
+                  style={{ flex:1, padding:'10px', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  Annuler
+                </button>
+                <div style={{ flex:2 }}>
+                  <Button onClick={handleReset} loading={resetLoading} disabled={resetStatus === 'success'}>
+                    Envoyer le lien
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div style={{ padding:'10px 14px', borderRadius:8, background:'var(--red-light)', border:'1px solid rgba(192,97,79,0.2)', marginBottom:14 }}>
@@ -85,9 +157,11 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Button onClick={handleSubmit} loading={loading}>
-            {mode === 'login' ? 'Se connecter' : "Créer mon compte"}
-          </Button>
+          {!showReset && (
+            <Button onClick={handleSubmit} loading={loading}>
+              {mode === 'login' ? 'Se connecter' : "Créer mon compte"}
+            </Button>
+          )}
         </Card>
       </div>
     </div>
