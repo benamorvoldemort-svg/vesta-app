@@ -5,7 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import ClientPage from './pages/ClientPage'
 import PrestatairePage from './pages/PrestatairePage'
-import BookingPage from './pages/BookingPage'
 import LandingPage from './pages/LandingPage'
 
 function HomeRedirect() {
@@ -47,15 +46,6 @@ function Router() {
           element={
             <ProtectedRoute requiredRole="client">
               <ClientPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/booking"
-          element={
-            <ProtectedRoute requiredRole="client">
-              <BookingPage />
             </ProtectedRoute>
           }
         />
