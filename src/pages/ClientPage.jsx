@@ -26,6 +26,7 @@ const STATUS_BADGE = { Requested:'blue', Assigned:'gold', InProgress:'teal', Com
 export default function ClientPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+
   const [view, setView] = useState('bookings')
   const [bookings, setBookings] = useState([])
   const [step, setStep] = useState(1)
@@ -53,7 +54,7 @@ export default function ClientPage() {
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
-      <Header userName={profile?.displayName} onLogout={logoutUser} />
+      <Header userName={profile?.displayName} onLogout={logoutUser} onProfile={() => navigate('/profile')} />
 
       <div style={{ maxWidth:560, margin:'0 auto', padding:'28px 20px' }}>
 

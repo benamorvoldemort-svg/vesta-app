@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
 import { listenPrestataireReviews } from '../firebase/reviewService'
@@ -20,6 +21,7 @@ const STEPS = [
 
 export default function WorkerPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [activeJob, setActiveJob] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
@@ -105,7 +107,7 @@ export default function WorkerPage() {
 
   return (
     <div style={{ height:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
-      <Header userName={profile?.displayName} onLogout={logoutUser} role="Prestataire" />
+      <Header userName={profile?.displayName} onLogout={logoutUser} onProfile={() => navigate('/profile')} role="Prestataire" />
       {reviews.length > 0 && (() => {
         const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
         return (

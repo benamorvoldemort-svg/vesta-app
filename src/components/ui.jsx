@@ -111,7 +111,7 @@ export function Toast({ message, show }) {
   )
 }
 
-export function Header({ userName, onLogout, role }) {
+export function Header({ userName, onLogout, onProfile, role }) {
   return (
     <header style={{
       background: 'var(--bg-card)', borderBottom: '1px solid var(--border)',
@@ -124,6 +124,11 @@ export function Header({ userName, onLogout, role }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         {userName && <span style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{userName}</span>}
+        {onProfile && (
+          <button onClick={onProfile} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--brown)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: 600 }}>
+            Profil
+          </button>
+        )}
         <button onClick={onLogout} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
           Déco
         </button>
