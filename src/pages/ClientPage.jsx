@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createBooking, listenClientBookings } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
@@ -23,6 +24,7 @@ const STATUS_BADGE = { Requested:'blue', Assigned:'gold', InProgress:'teal', Com
 
 export default function ClientPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [view, setView] = useState('bookings')
   const [bookings, setBookings] = useState([])
   const [step, setStep] = useState(1)
@@ -59,6 +61,14 @@ export default function ClientPage() {
           </h2>
           <p style={{ color:'var(--text-muted)', fontSize:13, marginTop:4 }}>Premium condo cleaning · Griffintown</p>
         </div>
+
+        <button
+          onClick={() => navigate('/booking')}
+          style={{ width:'100%', padding:'16px', borderRadius:'var(--radius)', border:'none', background:'var(--brown)', color:'white', fontSize:15, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 20px rgba(184,147,90,0.35)', transition:'all 0.2s', marginBottom:16, fontFamily:"'DM Sans',sans-serif" }}
+          onMouseOver={e => { e.currentTarget.style.opacity='0.88'; e.currentTarget.style.transform='translateY(-1px)' }}
+          onMouseOut={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.transform='translateY(0)' }}>
+          🧹 Réserver maintenant
+        </button>
 
         <div style={{ display:'flex', gap:4, background:'var(--bg-card)', borderRadius:'var(--radius-sm)', padding:4, marginBottom:24, border:'1px solid var(--border)', boxShadow:'var(--shadow)' }}>
           {[{ k:'bookings', l:'Mes réservations' }, { k:'new', l:'+ Nouvelle demande' }].map(t => (
