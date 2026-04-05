@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import ClientPage from './pages/ClientPage'
 import PrestatairePage from './pages/PrestatairePage'
 import ProfilePage from './pages/ProfilePage'
+import AdminDashboard from './pages/AdminDashboard'
 import LandingPage from './pages/LandingPage'
 
 function HomeRedirect() {
@@ -13,6 +14,7 @@ function HomeRedirect() {
   if (loading) return null
   if (profile?.role === 'client') return <Navigate to="/dashboard/client" replace />
   if (profile?.role === 'prestataire') return <Navigate to="/dashboard/prestataire" replace />
+  if (profile?.role === 'admin') return <Navigate to="/admin" replace />
   return <Navigate to="/home" replace />
 }
 
@@ -56,6 +58,15 @@ function Router() {
           element={
             <ProtectedRoute requiredRole="prestataire">
               <PrestatairePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />

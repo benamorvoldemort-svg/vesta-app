@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
   if (!profile) return <Navigate to="/login" replace />
 
   if (requiredRole && profile.role !== requiredRole) {
-    const home = profile.role === 'client' ? '/dashboard/client' : '/dashboard/prestataire'
+    const home = profile.role === 'admin' ? '/admin' : profile.role === 'client' ? '/dashboard/client' : '/dashboard/prestataire'
     return <Navigate to={home} replace />
   }
 

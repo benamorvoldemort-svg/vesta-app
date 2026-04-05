@@ -14,3 +14,10 @@ export function listenPrestataireReviews(prestataireId, cb) {
   const q = query(collection(db, 'reviews'), where('prestataireId', '==', prestataireId))
   return onSnapshot(q, snap => cb(snap.docs.map(d => d.data())))
 }
+
+export function listenAllReviews(cb) {
+  return onSnapshot(
+    collection(db, 'reviews'),
+    snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  )
+}
