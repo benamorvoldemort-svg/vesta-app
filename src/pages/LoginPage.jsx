@@ -23,7 +23,7 @@ export default function LoginPage() {
     try {
       if (mode === 'signup') {
         const u = await registerUser(form.email, form.password, role, form.displayName)
-        navigate(u.role === 'client' ? '/dashboard/client' : '/dashboard/prestataire')
+        navigate(u.role === 'client' ? '/dashboard/client' : '/onboarding')
       } else {
         const u = await loginUser(form.email, form.password)
         navigate(u.role === 'client' ? '/dashboard/client' : '/dashboard/prestataire')

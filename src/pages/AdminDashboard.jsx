@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [tab, setTab]                   = useState('overview')
   const [statusFilter, setStatusFilter] = useState('all')
   const [toast, setToast]               = useState({ show: false, msg: '' })
+  const [rejectionInputs, setRejectionInputs] = useState({}) // uid → reason text
 
   function notify(msg) { setToast({ show: true, msg }); setTimeout(() => setToast({ show: false, msg: '' }), 3000) }
 
@@ -82,9 +83,12 @@ export default function AdminDashboard() {
     if (pid) prestataireJobCount[pid] = (prestataireJobCount[pid] || 0) + 1
   })
 
+  const pendingVerif = prestataires.filter(p => p.status === 'pending_verification')
+
   const TABS = [
     { k: 'overview',     l: "📊 Vue d'ensemble" },
     { k: 'bookings',     l: `📋 Réservations (${bookings.length})` },
+    { k: 'verification', l: `🔍 Vérification${pendingVerif.length ? ` (${pendingVerif.length})` : ''}` },
     { k: 'prestataires', l: `🧹 Prestataires (${prestataires.length})` },
     { k: 'clients',      l: `👤 Clients (${clients.length})` },
     { k: 'reviews',      l: `⭐ Avis (${reviews.length})` },
@@ -216,6 +220,142 @@ export default function AdminDashboard() {
                 <p style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: 14 }}>Aucune réservation pour ce filtre.</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── SECTION VÉRIFICATION ── */}
+        {tab === 'verification' && (
+          <div>
+            {/* Pending */}
+            <SectionLabel>En attente de vérification ({pendingVerif.length})</SectionLabel>
+            {pendingVerif.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>Aucun dossier en attente.</p>
+            )}
+            {pendingVerif.map(p => (
+              <Card key={p.uid} style={{ marginBottom: 16, border: '1px solid rgba(184,147,90,0.35)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                  {p.photoURL
+                    ? <img src={p.photoURL} alt="" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--brown)', flexShrink: 0 }} />
+                    : <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--brown-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>🧹</div>
+                  }
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                      <p style={{ fontWeight: 700, fontSize: 15 }}>{p.displayName || p.nom || '—'}</p>
+                      <span style={{ fontSize: 10, background: 'var(--brown-light)', color: 'var(--brown)', border: '1px solid rgba(184,147,90,0.3)', borderRadius: 10, padding: '2px 8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>NOUVEAU</span>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.email} · {p.telephone || '—'}</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12, fontSize: 13 }}>
+                  {[
+                    ['Téléphone', p.telephone],
+                    ['Date de naissance', p.dateNaissance],
+                    ['Adresse', p.adresse],
+                    ['Expérience', p.experience],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ background: 'var(--bg-section)', borderRadius: 8, padding: '10px 12px' }}>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{k}</p>
+                      <p style={{ color: 'var(--text)', fontWeight: 500 }}>{v || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {p.typesNettoyage?.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Types maîtrisés</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {p.typesNettoyage.map(t => <span key={t} style={{ fontSize: 12, background: 'var(--brown-light)', color: 'var(--brown)', borderRadius: 20, padding: '3px 10px', fontWeight: 600 }}>{t}</span>)}
+                    </div>
+                  </div>
+                )}
+
+                {p.motivation && (
+                  <div style={{ marginBottom: 12, background: 'var(--bg-section)', borderRadius: 8, padding: '10px 12px' }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Motivation</p>
+                    <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>{p.motivation}</p>
+                  </div>
+                )}
+
+                {p.idPhotoURL && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Pièce d'identité</p>
+                    <img src={p.idPhotoURL} alt="ID" style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 8, border: '1px solid var(--border)', objectFit: 'contain', cursor: 'pointer' }}
+                      onClick={() => window.open(p.idPhotoURL, '_blank')} />
+                  </div>
+                )}
+
+                {p.references && (
+                  <div style={{ marginBottom: 12, background: 'var(--bg-section)', borderRadius: 8, padding: '10px 12px' }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Références</p>
+                    <p style={{ fontSize: 13, color: 'var(--text)' }}>{p.references}</p>
+                  </div>
+                )}
+
+                {/* Refus avec raison */}
+                <div style={{ marginBottom: 12 }}>
+                  <textarea
+                    placeholder="Raison du refus (optionnel)..."
+                    value={rejectionInputs[p.uid] || ''}
+                    onChange={e => setRejectionInputs(prev => ({ ...prev, [p.uid]: e.target.value }))}
+                    rows={2}
+                    style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', color: 'var(--text)', fontFamily: "'DM Sans',sans-serif", fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--red)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={async () => {
+                      await updatePrestataire(p.uid, { status: 'active' })
+                      notify(`${p.displayName || 'Prestataire'} approuvé ✅`)
+                    }}
+                    style={{ flex: 1, padding: '11px', borderRadius: 'var(--radius-sm)', border: '1.5px solid rgba(107,158,120,0.4)', background: 'var(--green-light)', color: 'var(--green)', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = 'white' }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'var(--green-light)'; e.currentTarget.style.color = 'var(--green)' }}>
+                    ✓ Approuver
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await updatePrestataire(p.uid, { status: 'rejected', rejectionReason: rejectionInputs[p.uid] || '' })
+                      notify(`${p.displayName || 'Prestataire'} refusé`)
+                    }}
+                    style={{ flex: 1, padding: '11px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(192,97,79,0.3)', background: 'var(--red-light)', color: 'var(--red)', fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = 'white' }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'var(--red-light)'; e.currentTarget.style.color = 'var(--red)' }}>
+                    ✗ Refuser
+                  </button>
+                </div>
+              </Card>
+            ))}
+
+            <Divider />
+
+            {/* Actifs & refusés */}
+            {['active', 'rejected'].map(st => {
+              const group = prestataires.filter(p => p.status === st)
+              if (!group.length) return null
+              return (
+                <div key={st} style={{ marginTop: 20 }}>
+                  <SectionLabel>{st === 'active' ? `Prestataires actifs (${group.length})` : `Refusés (${group.length})`}</SectionLabel>
+                  {group.map(p => (
+                    <Card key={p.uid} style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+                      {p.photoURL
+                        ? <img src={p.photoURL} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                        : <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-section)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🧹</div>
+                      }
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 600, fontSize: 14 }}>{p.displayName || p.nom || '—'}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.email}</p>
+                        {st === 'rejected' && p.rejectionReason && <p style={{ fontSize: 11, color: 'var(--red)', marginTop: 2 }}>Refus : {p.rejectionReason}</p>}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10, background: st === 'active' ? 'var(--green-light)' : 'var(--red-light)', color: st === 'active' ? 'var(--green)' : 'var(--red)' }}>
+                        {st === 'active' ? 'ACTIF' : 'REFUSÉ'}
+                      </span>
+                    </Card>
+                  ))}
+                </div>
+              )
+            })}
           </div>
         )}
 

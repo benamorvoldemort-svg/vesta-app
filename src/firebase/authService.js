@@ -9,8 +9,8 @@ import { doc, setDoc, getDoc } from 'firebase/firestore'
 
 export async function registerUser(email, password, role, displayName) {
   const cred = await createUserWithEmailAndPassword(auth, email, password)
-  const approvalStatus = role === 'worker' ? 'pending' : 'approved'
-  const profile = { uid: cred.user.uid, email, displayName, role, approvalStatus }
+  const status = role === 'prestataire' ? 'pending_onboarding' : 'active'
+  const profile = { uid: cred.user.uid, email, displayName, nom: displayName, role, status }
   await setDoc(doc(db, 'users', cred.user.uid), profile)
   return profile
 }

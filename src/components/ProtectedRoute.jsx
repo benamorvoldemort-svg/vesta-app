@@ -14,6 +14,12 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
   if (!profile) return <Navigate to="/login" replace />
 
+  // Prestataire — vérifier le statut avant d'accéder au dashboard
+  if (profile.role === 'prestataire') {
+    if (profile.status === 'pending_onboarding') return <Navigate to="/onboarding" replace />
+    if (profile.status === 'pending_verification' || profile.status === 'rejected') return <Navigate to="/pending-verification" replace />
+  }
+
   if (requiredRole && profile.role !== requiredRole) {
     const home = profile.role === 'admin' ? '/admin' : profile.role === 'client' ? '/dashboard/client' : '/dashboard/prestataire'
     return <Navigate to={home} replace />

@@ -7,6 +7,8 @@ import ClientPage from './pages/ClientPage'
 import PrestatairePage from './pages/PrestatairePage'
 import ProfilePage from './pages/ProfilePage'
 import AdminDashboard from './pages/AdminDashboard'
+import PrestataireOnboarding from './pages/PrestataireOnboarding'
+import PendingVerification from './pages/PendingVerification'
 import LandingPage from './pages/LandingPage'
 
 function HomeRedirect() {
@@ -76,6 +78,24 @@ function Router() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <PrestataireOnboarding />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pending-verification"
+          element={
+            <ProtectedRoute>
+              <PendingVerification />
             </ProtectedRoute>
           }
         />
