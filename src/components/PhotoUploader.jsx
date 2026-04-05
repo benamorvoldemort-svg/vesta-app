@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react'
 import { uploadPhoto } from '../firebase/photoService'
-import { Camera, X, Check } from 'lucide-react'
+import { Camera, X } from 'lucide-react'
+import Lightbox from './Lightbox'
 
 export default function PhotoUploader({ label, photos, onPhotosChange, maxPhotos = 5 }) {
   const [uploading, setUploading] = useState(false)
+  const [lightboxUrl, setLightboxUrl] = useState(null)
   const inputRef = useRef(null)
 
   async function handleFiles(e) {
@@ -34,8 +36,8 @@ export default function PhotoUploader({ label, photos, onPhotosChange, maxPhotos
       {photos.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
           {photos.map((url, i) => (
-            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
-              <img src={url} alt={`photo-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'zoom-in' }}>
+              <img src={url} alt={`photo-${i}`} onClick={() => setLightboxUrl(url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <button
                 onClick={() => removePhoto(i)}
                 style={{
@@ -83,6 +85,7 @@ export default function PhotoUploader({ label, photos, onPhotosChange, maxPhotos
           </button>
         </>
       )}
+      <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
     </div>
   )
 }

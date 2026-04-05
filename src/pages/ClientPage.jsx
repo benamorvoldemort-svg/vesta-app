@@ -7,6 +7,7 @@ const createCheckoutSession = () => new Promise(resolve => setTimeout(() => reso
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
 import ChatDrawer from '../components/ChatDrawer'
 import ReviewModal from '../components/ReviewModal'
+import Lightbox from '../components/Lightbox'
 
 const SIZES = [{ label:'Studio', price:89 }, { label:'3½', price:109 }, { label:'4½', price:139 }, { label:'5½', price:169 }]
 const EXTRAS = [
@@ -38,6 +39,7 @@ export default function ClientPage() {
   const [chatBookingId, setChatBookingId] = useState(null)
   const [reviewBooking, setReviewBooking] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
+  const [lightboxUrl, setLightboxUrl] = useState(null)
   const total = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
@@ -165,7 +167,7 @@ export default function ClientPage() {
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                           {b.photosBefore.map((url, i) => (
-                            <div key={i} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                            <div key={i} onClick={() => setLightboxUrl(url)} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'zoom-in' }}>
                               <img src={url} alt={`avant-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           ))}
@@ -179,7 +181,7 @@ export default function ClientPage() {
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                           {b.photosAfter.map((url, i) => (
-                            <div key={i} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                            <div key={i} onClick={() => setLightboxUrl(url)} style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'zoom-in' }}>
                               <img src={url} alt={`après-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           ))}
@@ -327,6 +329,7 @@ export default function ClientPage() {
           onClose={() => setChatBookingId(null)}
         />
       )}
+      <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       {reviewBooking && (
         <ReviewModal
           booking={reviewBooking}
