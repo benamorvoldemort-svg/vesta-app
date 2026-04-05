@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
+import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, refuseBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
 import { listenPrestataireReviews } from '../firebase/reviewService'
 import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
@@ -72,6 +72,13 @@ export default function WorkerPage() {
     setSelectedJob(null)
     setMobileView('list')
     notify('Mission acceptée! 🎉')
+    setLoading(false)
+  }
+
+  async function handleRefuse(jobId) {
+    setLoading(true)
+    await refuseBooking(jobId)
+    setSelectedJob(null)
     setLoading(false)
   }
 
@@ -210,8 +217,9 @@ export default function WorkerPage() {
               </div>
               <PriceTag amount={job.price} size="md"/>
               {selectedJob?.id===job.id && (
-                <div style={{ marginTop:12 }}>
+                <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:8 }}>
                   <Button onClick={()=>handleAccept(job.id)} loading={loading}>✅ Accepter la mission</Button>
+                  <Button variant="danger" onClick={()=>handleRefuse(job.id)} loading={loading}>✗ Refuser</Button>
                 </div>
               )}
             </Card>

@@ -70,3 +70,11 @@ export async function updateBookingPhotos(bookingId, field, urls) {
 export async function adminUpdateStatus(bookingId, status) {
   await updateDoc(doc(db, 'bookings', bookingId), { status })
 }
+
+export async function cancelBooking(bookingId) {
+  await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled' })
+}
+
+export async function refuseBooking(bookingId) {
+  await updateDoc(doc(db, 'bookings', bookingId), { status: 'refused' })
+}

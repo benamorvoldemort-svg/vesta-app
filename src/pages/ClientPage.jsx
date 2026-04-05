@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { createBooking, listenClientBookings } from '../firebase/bookingService'
+import { createBooking, listenClientBookings, cancelBooking } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
 const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
@@ -21,7 +21,7 @@ const STEPS = [
   { key:'InProgress', label:'Ménage en cours',     desc:'Nettoyage en cours ✨' },
   { key:'Completed',  label:'Mission complétée',   desc:'Terminé! 🎉' },
 ]
-const STATUS_BADGE = { Requested:'blue', Assigned:'gold', InProgress:'teal', Completed:'default' }
+const STATUS_BADGE = { Requested:'blue', Assigned:'gold', InProgress:'teal', Completed:'default', cancelled:'red' }
 
 export default function ClientPage() {
   const { profile } = useAuth()
@@ -37,10 +37,17 @@ export default function ClientPage() {
   const [toast, setToast] = useState({ show:false, msg:'' })
   const [chatBookingId, setChatBookingId] = useState(null)
   const [reviewBooking, setReviewBooking] = useState(null)
+  const [confirmCancelId, setConfirmCancelId] = useState(null)
   const total = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
   function notify(msg) { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:'' }), 3000) }
+
+  async function handleCancel(bookingId) {
+    await cancelBooking(bookingId)
+    setConfirmCancelId(null)
+    notify('Réservation annulée.')
+  }
 
   async function handlePay() {
     if (!form.address || !form.date) { notify('Remplis tous les champs'); return }
@@ -102,13 +109,15 @@ export default function ClientPage() {
                     <p style={{ fontWeight:600, fontSize:15 }}>{b.address}</p>
                     <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>{b.size} · {b.date} à {b.time}</p>
                   </div>
-                  <Badge variant={STATUS_BADGE[b.status]}>{b.status}</Badge>
+                  <Badge variant={STATUS_BADGE[b.status] ?? 'default'}>
+                    {b.status === 'cancelled' ? 'Annulée' : b.status}
+                  </Badge>
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                   <PriceTag amount={b.price} size="md" />
                   {b.extras?.length>0 && <span style={{ fontSize:11, color:'var(--text-dim)' }}>{b.extras.join(' · ')}</span>}
                 </div>
-                {b.status!=='Completed' && <><Divider /><StatusTracker steps={STEPS} currentStatus={b.status} />
+                {b.status !== 'Completed' && b.status !== 'cancelled' && <><Divider /><StatusTracker steps={STEPS} currentStatus={b.status} />
                   <button
                     onClick={(e) => { e.stopPropagation(); setChatBookingId(b.id) }}
                     style={{
@@ -124,6 +133,29 @@ export default function ClientPage() {
                     💬 Contacter le prestataire
                   </button>
                 </>}
+                {(b.status === 'Requested' || b.status === 'Assigned') && (
+                  <div style={{ marginTop: 12 }}>
+                    {confirmCancelId === b.id ? (
+                      <div style={{ background:'var(--red-light)', border:'1px solid rgba(192,97,79,0.25)', borderRadius:'var(--radius-sm)', padding:'12px 14px' }}>
+                        <p style={{ fontSize:13, color:'var(--red)', fontWeight:600, marginBottom:10 }}>
+                          Êtes-vous sûr de vouloir annuler ?
+                        </p>
+                        <div style={{ display:'flex', gap:8 }}>
+                          <Button variant="danger" size="sm" onClick={() => handleCancel(b.id)}>Oui, annuler</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setConfirmCancelId(null)}>Non, garder</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(b.id) }}
+                        style={{ width:'100%', padding:'10px', borderRadius:8, border:'1px solid rgba(192,97,79,0.35)', background:'transparent', color:'var(--red)', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = 'var(--red-light)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        Annuler la réservation
+                      </button>
+                    )}
+                  </div>
+                )}
                 {(b.photosBefore?.length > 0 || b.photosAfter?.length > 0) && (
                   <div style={{ marginTop: 12 }}>
                     {b.photosBefore?.length > 0 && (
