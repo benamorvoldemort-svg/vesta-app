@@ -1,9 +1,12 @@
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { logoutUser } from '../firebase/authService'
 import { Button } from '../components/ui'
 
 export default function PendingVerification() {
-  const { profile } = useAuth()
+  const { profile, loading } = useAuth()
+  if (loading) return null
+  if (!profile) return <Navigate to="/login" replace />
   const isRejected = profile?.status === 'rejected'
 
   return (

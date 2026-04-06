@@ -82,23 +82,8 @@ function Router() {
           }
         />
 
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute>
-              <PrestataireOnboarding />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/pending-verification"
-          element={
-            <ProtectedRoute>
-              <PendingVerification />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/onboarding" element={<PrestataireOnboarding />} />
+        <Route path="/pending-verification" element={<PendingVerification />} />
 
         <Route path="/" element={<HomeRedirect />} />
         <Route path="*" element={<HomeRedirect />} />

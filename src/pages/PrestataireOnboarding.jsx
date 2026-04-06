@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
@@ -14,7 +14,7 @@ const EQUIPEMENTS = [
 ]
 
 export default function PrestataireOnboarding() {
-  const { profile } = useAuth()
+  const { profile, loading } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
@@ -41,6 +41,9 @@ export default function PrestataireOnboarding() {
 
   const photoRef = useRef()
   const idRef    = useRef()
+
+  if (loading) return null
+  if (!profile) return <Navigate to="/login" replace />
 
   function toggleArray(arr, setArr, val) {
     setArr(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val])
