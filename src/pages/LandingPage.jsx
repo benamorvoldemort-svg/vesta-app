@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
 const SERVICES = [
@@ -203,7 +203,19 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer style={{ background: 'var(--text)', color: 'rgba(255,255,255,0.6)', padding: '32px 24px', textAlign: 'center' }}>
         <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontStyle: 'italic', color: 'var(--brown)', marginBottom: 8 }}>Vesta Home</p>
-        <p style={{ fontSize: 13 }}>Griffintown, Montréal · © 2026 Vesta Home</p>
+        <p style={{ fontSize: 13, marginBottom: 12 }}>Griffintown, Montréal · © 2026 Vesta Home</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+          <Link to="/cgu" style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
+            onMouseOver={e => e.currentTarget.style.color = 'var(--brown)'}
+            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
+            Conditions d'utilisation
+          </Link>
+          <Link to="/confidentialite" style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
+            onMouseOver={e => e.currentTarget.style.color = 'var(--brown)'}
+            onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
+            Politique de confidentialité
+          </Link>
+        </div>
       </footer>
 
     </div>

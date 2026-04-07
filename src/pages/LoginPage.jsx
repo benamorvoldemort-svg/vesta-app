@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { loginUser, registerUser } from '../firebase/authService'
 import { sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../firebase/config'
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', displayName: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showReset, setShowReset] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [resetStatus, setResetStatus] = useState(null) // 'success' | 'error'
@@ -157,8 +158,21 @@ export default function LoginPage() {
             </div>
           )}
 
+          {mode === 'signup' && !showReset && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
+              <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)}
+                style={{ width: 16, height: 16, marginTop: 2, accentColor: 'var(--brown)', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                J'accepte les{' '}
+                <Link to="/cgu" target="_blank" style={{ color: 'var(--brown)', fontWeight: 600, textDecoration: 'none' }}>conditions d'utilisation</Link>
+                {' '}et la{' '}
+                <Link to="/confidentialite" target="_blank" style={{ color: 'var(--brown)', fontWeight: 600, textDecoration: 'none' }}>politique de confidentialité</Link>
+              </span>
+            </label>
+          )}
+
           {!showReset && (
-            <Button onClick={handleSubmit} loading={loading}>
+            <Button onClick={handleSubmit} loading={loading} disabled={mode === 'signup' && !acceptedTerms}>
               {mode === 'login' ? 'Se connecter' : "Créer mon compte"}
             </Button>
           )}

@@ -10,6 +10,9 @@ import AdminDashboard from './pages/AdminDashboard'
 import PrestataireOnboarding from './pages/PrestataireOnboarding'
 import PendingVerification from './pages/PendingVerification'
 import LandingPage from './pages/LandingPage'
+import CGUPage from './pages/CGUPage'
+import PrivacyPage from './pages/PrivacyPage'
+import CookieBanner from './components/CookieBanner'
 
 function HomeRedirect() {
   const { profile, loading } = useAuth()
@@ -85,9 +88,14 @@ function Router() {
         <Route path="/onboarding" element={<PrestataireOnboarding />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
 
+        <Route path="/cgu" element={<CGUPage />} />
+        <Route path="/confidentialite" element={<PrivacyPage />} />
+
         <Route path="/" element={<HomeRedirect />} />
         <Route path="*" element={<HomeRedirect />} />
       </Routes>
+
+      <CookieBanner />
 
       {showInstall && (
         <div style={{
