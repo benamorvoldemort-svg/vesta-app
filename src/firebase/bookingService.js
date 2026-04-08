@@ -69,9 +69,44 @@ export async function adminUpdateStatus(bookingId, status) {
 }
 
 export async function cancelBooking(bookingId) {
-  await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled' })
+  await updateDoc(doc(db, 'bookings', bookingId), { status: 'cancelled', recurrenceActive: false })
 }
 
 export async function refuseBooking(bookingId) {
   await updateDoc(doc(db, 'bookings', bookingId), { status: 'refused' })
+}
+
+export async function stopRecurrence(bookingId) {
+  await updateDoc(doc(db, 'bookings', bookingId), { recurrenceActive: false })
+}
+
+const RECURRENCE_DAYS = { weekly: 7, biweekly: 14, monthly: 30 }
+
+export async function createNextRecurringBooking(completedBooking) {
+  if (!completedBooking.recurrenceActive || completedBooking.recurrence === 'once') return null
+  const days = RECURRENCE_DAYS[completedBooking.recurrence]
+  if (!days) return null
+  const d = new Date(completedBooking.date)
+  d.setDate(d.getDate() + days)
+  const nextDate = d.toISOString().split('T')[0]
+  const ref = await addDoc(collection(db, 'bookings'), {
+    clientId: completedBooking.clientId,
+    workerId: null,
+    status: 'Requested',
+    address: completedBooking.address,
+    postalCode: completedBooking.postalCode || '',
+    size: completedBooking.size,
+    extras: completedBooking.extras || [],
+    price: completedBooking.price,
+    date: nextDate,
+    time: completedBooking.time,
+    recurrence: completedBooking.recurrence,
+    recurrenceDiscount: completedBooking.recurrenceDiscount || 0,
+    recurrenceActive: true,
+    parentBookingId: completedBooking.id,
+    photosBefore: [],
+    photosAfter: [],
+    createdAt: serverTimestamp(),
+  })
+  return { id: ref.id, date: nextDate }
 }

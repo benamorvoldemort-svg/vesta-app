@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { createBooking, listenClientBookings, cancelBooking } from '../firebase/bookingService'
+import { createBooking, listenClientBookings, cancelBooking, stopRecurrence } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
 
@@ -11,6 +11,12 @@ import ReviewModal from '../components/ReviewModal'
 import Lightbox from '../components/Lightbox'
 
 const SIZES = [{ label:'Studio', price:109 }, { label:'3½', price:129 }, { label:'4½', price:149 }, { label:'5½', price:189 }]
+const RECURRENCES = [
+  { key:'once',      label:'Une seule fois', icon:'1️⃣', discount:0 },
+  { key:'weekly',    label:'Toutes les semaines', icon:'🔄', discount:10 },
+  { key:'biweekly',  label:'Toutes les 2 semaines', icon:'🔄', discount:7 },
+  { key:'monthly',   label:'1x par mois', icon:'🔄', discount:5 },
+]
 const EXTRAS = [
   { key:'oven',     label:'Four',            icon:'🔥', price:20 },
   { key:'fridge',   label:'Frigo',           icon:'❄️', price:15 },
@@ -42,7 +48,11 @@ export default function ClientPage() {
   const [reviewBooking, setReviewBooking] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
   const [lightboxUrl, setLightboxUrl] = useState(null)
-  const total = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
+  const [recurrence, setRecurrence] = useState(RECURRENCES[0])
+  const [confirmStopId, setConfirmStopId] = useState(null)
+  const baseTotal = size.price + EXTRAS.filter(e => extras[e.key]).reduce((s, e) => s + e.price, 0)
+  const discount = recurrence.discount > 0 ? Math.round(baseTotal * recurrence.discount / 100) : 0
+  const total = baseTotal - discount
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
   function notify(msg) { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:'' }), 3000) }
@@ -75,11 +85,22 @@ export default function ClientPage() {
     if (!form.address || !form.date) { notify('Remplis tous les champs'); return }
     setPaying(true)
     await createCheckoutSession()
-    const booking = await createBooking(profile.uid, { address:form.address, postalCode:form.postalCode, size:size.label, extras:EXTRAS.filter(e=>extras[e.key]).map(e=>e.key), price:total, date:form.date, time:form.time })
+    await createBooking(profile.uid, {
+      address: form.address, postalCode: form.postalCode,
+      size: size.label, extras: EXTRAS.filter(e => extras[e.key]).map(e => e.key),
+      price: total, date: form.date, time: form.time,
+      recurrence: recurrence.key,
+      recurrenceDiscount: recurrence.discount,
+      recurrenceActive: recurrence.key !== 'once',
+    })
     setStep(3); notify('Réservation confirmée! ✨'); setPaying(false)
   }
 
-  function reset() { setStep(1); setSize(SIZES[0]); setExtras({}); setForm({ address:'', postalCode:'', date:'', time:'10:00' }); setView('bookings') }
+  function reset() {
+    setStep(1); setSize(SIZES[0]); setExtras({})
+    setForm({ address:'', postalCode:'', date:'', time:'10:00' })
+    setRecurrence(RECURRENCES[0]); setView('bookings')
+  }
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg)' }}>
@@ -127,9 +148,23 @@ export default function ClientPage() {
             ) : bookings.map((b, i) => (
               <Card key={b.id} className={`stagger-${Math.min(i+1,5)} animate-fade-up`}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
-                  <div>
+                  <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontWeight:600, fontSize:15 }}>{b.address}</p>
                     <p style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>{b.size} · {b.date} à {b.time}</p>
+                    {b.recurrence && b.recurrence !== 'once' && (
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6 }}>
+                        <span style={{
+                          display:'inline-flex', alignItems:'center', gap:4,
+                          fontSize:11, fontWeight:700, padding:'3px 8px', borderRadius:20,
+                          background: b.recurrenceActive ? 'var(--brown-light)' : 'var(--bg-section)',
+                          color: b.recurrenceActive ? 'var(--brown)' : 'var(--text-dim)',
+                          border: `1px solid ${b.recurrenceActive ? 'rgba(184,147,90,0.35)' : 'var(--border)'}`,
+                        }}>
+                          🔄 {b.recurrenceActive ? 'Récurrent' : 'Récurrence arrêtée'}
+                          {b.recurrenceDiscount > 0 && b.recurrenceActive && ` −${b.recurrenceDiscount}%`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <Badge variant={STATUS_BADGE[b.status] ?? 'default'}>
                     {b.status === 'cancelled' ? 'Annulée' : b.status}
@@ -156,7 +191,7 @@ export default function ClientPage() {
                   </button>
                 </>}
                 {(b.status === 'Requested' || b.status === 'Assigned') && (
-                  <div style={{ marginTop: 12 }}>
+                  <div style={{ marginTop: 12, display:'flex', flexDirection:'column', gap:8 }}>
                     {confirmCancelId === b.id ? (
                       <div style={{ background:'var(--red-light)', border:'1px solid rgba(192,97,79,0.25)', borderRadius:'var(--radius-sm)', padding:'12px 14px' }}>
                         <p style={{ fontSize:13, color:'var(--red)', fontWeight:600, marginBottom:10 }}>
@@ -175,6 +210,26 @@ export default function ClientPage() {
                         onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                         Annuler la réservation
                       </button>
+                    )}
+                    {b.recurrence && b.recurrence !== 'once' && b.recurrenceActive && confirmStopId !== b.id && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmStopId(b.id) }}
+                        style={{ width:'100%', padding:'10px', borderRadius:8, border:'1px solid rgba(184,147,90,0.35)', background:'transparent', color:'var(--brown)', fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.2s' }}
+                        onMouseOver={e => e.currentTarget.style.background = 'var(--brown-light)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        Arrêter la récurrence
+                      </button>
+                    )}
+                    {confirmStopId === b.id && (
+                      <div style={{ background:'var(--brown-light)', border:'1px solid rgba(184,147,90,0.3)', borderRadius:'var(--radius-sm)', padding:'12px 14px' }}>
+                        <p style={{ fontSize:13, color:'var(--brown)', fontWeight:600, marginBottom:10 }}>
+                          Arrêter les prochaines réservations automatiques ?
+                        </p>
+                        <div style={{ display:'flex', gap:8 }}>
+                          <Button size="sm" onClick={async () => { await stopRecurrence(b.id); setConfirmStopId(null); notify('Récurrence arrêtée.') }}>Oui, arrêter</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setConfirmStopId(null)}>Non, garder</Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -281,6 +336,32 @@ export default function ClientPage() {
                   ))}
                 </div>
                 <Divider/>
+                <SectionLabel>Fréquence</SectionLabel>
+                <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+                  {RECURRENCES.map(r => (
+                    <button key={r.key} onClick={() => setRecurrence(r)} style={{
+                      padding:'12px 14px', borderRadius:'var(--radius-sm)', textAlign:'left',
+                      border: `1.5px solid ${recurrence.key===r.key ? 'var(--brown)' : 'var(--border)'}`,
+                      background: recurrence.key===r.key ? 'var(--brown-light)' : 'var(--bg-input)',
+                      cursor:'pointer', transition:'all 0.2s',
+                      display:'flex', justifyContent:'space-between', alignItems:'center',
+                    }}>
+                      <span style={{ fontSize:13, fontWeight:600, color: recurrence.key===r.key ? 'var(--brown)' : 'var(--text)' }}>
+                        {r.icon} {r.label}
+                      </span>
+                      {r.discount > 0 && (
+                        <span style={{
+                          fontSize:11, fontWeight:700, padding:'3px 8px', borderRadius:20,
+                          background: recurrence.key===r.key ? 'var(--brown)' : 'var(--bg-section)',
+                          color: recurrence.key===r.key ? 'white' : 'var(--text-muted)',
+                        }}>
+                          -{r.discount}%
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <Divider/>
                 <SectionLabel>Options supplémentaires</SectionLabel>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:20 }}>
                   {EXTRAS.map(o => (
@@ -300,12 +381,24 @@ export default function ClientPage() {
                 <Select label="Heure" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}>
                   {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'].map(t=><option key={t}>{t}</option>)}
                 </Select>
-                <div style={{ background:'var(--bg-section)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', margin:'8px 0 16px' }}>
-                  <div>
-                    <p style={{ fontSize:12, color:'var(--text-muted)', fontWeight:500 }}>Total estimé</p>
-                    <p style={{ fontSize:11, color:'var(--text-dim)', marginTop:2 }}>Taxes incluses</p>
+                <div style={{ background:'var(--bg-section)', border:`1px solid ${discount>0 ? 'rgba(107,158,120,0.35)' : 'var(--border)'}`, borderRadius:'var(--radius-sm)', padding:'16px 20px', margin:'8px 0 16px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div>
+                      <p style={{ fontSize:12, color:'var(--text-muted)', fontWeight:500 }}>Total estimé</p>
+                      <p style={{ fontSize:11, color:'var(--text-dim)', marginTop:2 }}>Taxes incluses</p>
+                    </div>
+                    <div style={{ textAlign:'right' }}>
+                      {discount > 0 && (
+                        <p style={{ fontSize:11, color:'var(--text-dim)', textDecoration:'line-through', marginBottom:2 }}>{baseTotal}$</p>
+                      )}
+                      <PriceTag amount={total} size="xl"/>
+                    </div>
                   </div>
-                  <PriceTag amount={total} size="xl"/>
+                  {discount > 0 && (
+                    <p style={{ fontSize:12, color:'var(--green)', fontWeight:700, marginTop:8 }}>
+                      ✓ Vous économisez {discount}$ par visite ({recurrence.discount}% de rabais récurrence)
+                    </p>
+                  )}
                 </div>
                 <Button size="lg" onClick={()=>{ if(!form.address||!form.date){notify('Remplis tous les champs');return} setStep(2) }}>Continue →</Button>
               </Card>
@@ -314,15 +407,33 @@ export default function ClientPage() {
             {step===2 && (
               <Card>
                 <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:22, marginBottom:18 }}>Confirmer la réservation</h3>
-                {[['Adresse',form.address],['Code postal',form.postalCode||'—'],['Logement',size.label],['Options',EXTRAS.filter(e=>extras[e.key]).map(e=>`${e.icon} ${e.label}`).join(' · ')||'Aucune'],['Date',form.date],['Heure',form.time]].map(([k,v])=>(
+                {[
+                  ['Adresse', form.address],
+                  ['Code postal', form.postalCode||'—'],
+                  ['Logement', size.label],
+                  ['Options', EXTRAS.filter(e=>extras[e.key]).map(e=>`${e.icon} ${e.label}`).join(' · ')||'Aucune'],
+                  ['Fréquence', recurrence.label],
+                  ['Date', form.date],
+                  ['Heure', form.time],
+                ].map(([k,v])=>(
                   <div key={k} style={{ display:'flex', justifyContent:'space-between', fontSize:13, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
                     <span style={{ color:'var(--text-muted)' }}>{k}</span>
                     <span style={{ fontWeight:600 }}>{v}</span>
                   </div>
                 ))}
-                <div style={{ background:'var(--bg-section)', borderRadius:'var(--radius-sm)', padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', margin:'16px 0' }}>
-                  <span style={{ fontWeight:600, fontSize:14 }}>Total</span>
-                  <PriceTag amount={total} size="xl"/>
+                <div style={{ background:'var(--bg-section)', borderRadius:'var(--radius-sm)', padding:'14px 18px', margin:'16px 0' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <span style={{ fontWeight:600, fontSize:14 }}>Total</span>
+                    <div style={{ textAlign:'right' }}>
+                      {discount > 0 && <p style={{ fontSize:11, color:'var(--text-dim)', textDecoration:'line-through' }}>{baseTotal}$</p>}
+                      <PriceTag amount={total} size="xl"/>
+                    </div>
+                  </div>
+                  {discount > 0 && (
+                    <p style={{ fontSize:12, color:'var(--green)', fontWeight:700, marginTop:6 }}>
+                      ✓ Économie de {discount}$ par visite
+                    </p>
+                  )}
                 </div>
                 <div style={{ display:'flex', gap:10 }}>
                   <Button variant="ghost" onClick={()=>setStep(1)} className="flex-1">← Modifier</Button>
@@ -335,7 +446,18 @@ export default function ClientPage() {
               <Card style={{ textAlign:'center', padding:'56px 24px', border:'1px solid rgba(184,147,90,0.3)' }}>
                 <div style={{ width:72, height:72, borderRadius:'50%', background:'var(--brown-light)', border:'1.5px solid var(--brown)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 20px' }}>✨</div>
                 <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:28, marginBottom:10 }}>Réservation confirmée!</h3>
-                <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom:28, lineHeight:1.6 }}>Votre demande est transmise aux prestataires disponibles à Griffintown.</p>
+                <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom: recurrence.key !== 'once' ? 16 : 28, lineHeight:1.6 }}>
+                  Votre demande est transmise aux prestataires disponibles à Griffintown.
+                </p>
+                {recurrence.key !== 'once' && (
+                  <div style={{ background:'var(--bg-section)', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)', padding:'12px 16px', marginBottom:28, textAlign:'left' }}>
+                    <p style={{ fontSize:13, fontWeight:700, color:'var(--brown)', marginBottom:4 }}>🔄 Récurrence activée</p>
+                    <p style={{ fontSize:12, color:'var(--text-muted)', lineHeight:1.6 }}>
+                      {recurrence.label} · Rabais {recurrence.discount}% appliqué automatiquement.
+                      Le prochain ménage sera créé après chaque prestation complétée.
+                    </p>
+                  </div>
+                )}
                 <Button onClick={reset}>Voir mes réservations</Button>
               </Card>
             )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, refuseBooking, startBooking, completeBooking, updateBookingPhotos } from '../firebase/bookingService'
+import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, refuseBooking, startBooking, completeBooking, updateBookingPhotos, createNextRecurringBooking } from '../firebase/bookingService'
 import { listenPrestataireReviews } from '../firebase/reviewService'
 import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
@@ -94,8 +94,13 @@ export default function WorkerPage() {
   async function handleComplete() {
     setLoading(true)
     await completeBooking(activeJob.id)
+    const next = await createNextRecurringBooking(activeJob)
     setActiveJob(null); setPhotoBefore(0); setPhotoAfter(0)
-    notify('Mission terminée! 💰')
+    if (next) {
+      notify(`Mission terminée! Prochain ménage créé le ${next.date} 🔄`)
+    } else {
+      notify('Mission terminée! 💰')
+    }
     setLoading(false)
   }
 
