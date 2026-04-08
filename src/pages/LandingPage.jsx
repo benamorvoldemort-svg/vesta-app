@@ -112,7 +112,7 @@ export default function LandingPage() {
       {/* PRICING BANNER */}
       <section style={{ background: 'var(--brown)', padding: '20px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
-          {[{ size: 'Studio', price: '89$' }, { size: '3½', price: '109$' }, { size: '4½', price: '139$' }, { size: '5½', price: '169$' }].map(p => (
+          {[{ size: 'Studio', price: '109$' }, { size: '3½', price: '129$' }, { size: '4½', price: '149$' }, { size: '5½', price: '189$' }].map(p => (
             <div key={p.size} style={{ textAlign: 'center' }}>
               <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 600, color: 'white', lineHeight: 1 }}>{p.price}</p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{p.size}</p>

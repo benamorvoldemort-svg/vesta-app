@@ -99,7 +99,7 @@ export default function WorkerPage() {
     setLoading(false)
   }
 
-  if (profile?.approvalStatus === 'pending') return (
+  if (profile?.status === 'pending_verification') return (
     <div style={{ minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
       <Card style={{ textAlign:'center', maxWidth:360, padding:'48px 24px' }}>
         <p style={{ fontSize:40, marginBottom:16 }}>⏳</p>

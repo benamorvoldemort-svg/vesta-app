@@ -2,7 +2,7 @@ import { db } from './config'
 import {
   collection, addDoc, doc, updateDoc,
   onSnapshot, query, where, orderBy,
-  serverTimestamp, getDocs
+  serverTimestamp, getDocs, limit
 } from 'firebase/firestore'
 
 export function listenAvailableBookings(cb) {
@@ -24,7 +24,7 @@ export function listenWorkerActiveBooking(workerId, cb) {
 }
 
 export function listenAllBookings(cb) {
-  const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'))
+  const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(100))
   return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
 }
 
@@ -40,14 +40,11 @@ export async function createBooking(clientId, data) {
 
 export async function notifyWorkersNewBooking(booking) {
   try {
-    const q = query(
-      collection(db, 'fcmTokens'),
-    )
-    const snap = await getDocs(q)
-    const tokens = snap.docs.map(d => d.data().token)
-    console.log('Workers to notify:', tokens.length)
-  } catch (err) {
-    console.error('Notify error:', err)
+    const snap = await getDocs(collection(db, 'fcmTokens'))
+    // tokens collected — FCM send requires Cloud Functions (Blaze plan)
+    void snap
+  } catch {
+    // non-critical — notifications are best-effort
   }
 }
 

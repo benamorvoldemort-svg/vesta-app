@@ -15,8 +15,8 @@ export default function PhotoUploader({ label, photos, onPhotosChange, maxPhotos
     try {
       const urls = await Promise.all(files.map(uploadPhoto))
       onPhotosChange([...photos, ...urls])
-    } catch (err) {
-      console.error('Upload error:', err)
+    } catch {
+      // upload failed — user can retry
     }
     setUploading(false)
     e.target.value = ''

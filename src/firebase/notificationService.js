@@ -1,7 +1,7 @@
 import { messaging } from './config'
 import { getToken, onMessage } from 'firebase/messaging'
 import { db } from './config'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc } from 'firebase/firestore'
 
 const VAPID_KEY = 'BJBMk7D5XKDlc6FZVfQFC2m_T-4ZYQBL9qiNlNollCl8AKFQC6n-ypzvDRnSqV9wGYwwerSl-1xs7gP5UYrgPLE'
 
@@ -15,8 +15,7 @@ export async function requestNotificationPermission(uid) {
       await setDoc(doc(db, 'fcmTokens', uid), { token, uid, updatedAt: new Date() })
     }
     return token
-  } catch (err) {
-    console.error('Notification permission error:', err)
+  } catch {
     return null
   }
 }

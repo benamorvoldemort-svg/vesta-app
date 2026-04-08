@@ -3,18 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createBooking, listenClientBookings, cancelBooking } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
-const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
+
+const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import ChatDrawer from '../components/ChatDrawer'
 import ReviewModal from '../components/ReviewModal'
 import Lightbox from '../components/Lightbox'
 
-const SIZES = [{ label:'Studio', price:89 }, { label:'3½', price:109 }, { label:'4½', price:139 }, { label:'5½', price:169 }]
+const SIZES = [{ label:'Studio', price:109 }, { label:'3½', price:129 }, { label:'4½', price:149 }, { label:'5½', price:189 }]
 const EXTRAS = [
-  { key:'oven',    label:'Four',            icon:'🔥', price:20 },
-  { key:'fridge',  label:'Frigo',           icon:'❄️', price:15 },
-  { key:'windows', label:'Fenêtres',        icon:'🪟', price:25 },
-  { key:'petHair', label:"Poils d'animaux", icon:'🐾', price:10 },
+  { key:'oven',     label:'Four',            icon:'🔥', price:20 },
+  { key:'fridge',   label:'Frigo',           icon:'❄️', price:15 },
+  { key:'windows',  label:'Fenêtres',        icon:'🪟', price:25 },
+  { key:'petHair',  label:"Poils d'animaux", icon:'🐾', price:10 },
+  { key:'sameDay',  label:'Même jour',       icon:'⚡', price:25 },
 ]
 const STEPS = [
   { key:'Requested',  label:'Demande créée',      desc:"Recherche d'un prestataire..." },
@@ -46,9 +48,27 @@ export default function ClientPage() {
   function notify(msg) { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:'' }), 3000) }
 
   async function handleCancel(bookingId) {
-    await cancelBooking(bookingId)
-    setConfirmCancelId(null)
-    notify('Réservation annulée.')
+    const booking = bookings.find(b => b.id === bookingId)
+    if (booking?.date && booking?.time) {
+      const serviceTime = new Date(`${booking.date}T${booking.time}:00`)
+      const hoursUntil = (serviceTime - Date.now()) / 3600000
+      if (hoursUntil < 12) {
+        notify('Annulation impossible — moins de 12h avant le service.')
+        setConfirmCancelId(null)
+        return
+      }
+      await cancelBooking(bookingId)
+      setConfirmCancelId(null)
+      if (hoursUntil < 24) {
+        notify('Réservation annulée — remboursement 50%.')
+      } else {
+        notify('Réservation annulée — remboursement 100%.')
+      }
+    } else {
+      await cancelBooking(bookingId)
+      setConfirmCancelId(null)
+      notify('Réservation annulée.')
+    }
   }
 
   async function handlePay() {
@@ -75,7 +95,7 @@ export default function ClientPage() {
         </div>
 
         <button
-          onClick={() => navigate('/booking')}
+          onClick={() => { setView('new'); setStep(1) }}
           style={{ width:'100%', padding:'16px', borderRadius:'var(--radius)', border:'none', background:'var(--brown)', color:'white', fontSize:15, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 20px rgba(184,147,90,0.35)', transition:'all 0.2s', marginBottom:16, fontFamily:"'DM Sans',sans-serif" }}
           onMouseOver={e => { e.currentTarget.style.opacity='0.88'; e.currentTarget.style.transform='translateY(-1px)' }}
           onMouseOut={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.transform='translateY(0)' }}>
