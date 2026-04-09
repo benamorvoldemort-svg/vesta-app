@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { listenAvailableBookings, listenWorkerActiveBooking, acceptBooking, refuseBooking, startBooking, completeBooking, updateBookingPhotos, createNextRecurringBooking } from '../firebase/bookingService'
+import { listenAvailableBookings, listenWorkerActiveBooking, listenWorkerCompletedBookings, acceptBooking, refuseBooking, startBooking, completeBooking, updateBookingPhotos, createNextRecurringBooking } from '../firebase/bookingService'
 import { listenPrestataireReviews } from '../firebase/reviewService'
 import { logoutUser } from '../firebase/authService'
 import { requestNotificationPermission, onForegroundMessage } from '../firebase/notificationService'
@@ -10,6 +10,119 @@ import VestaMap from '../components/VestaMap'
 import ChatDrawer from '../components/ChatDrawer'
 import PhotoUploader from '../components/PhotoUploader'
 import { Camera, List, Map } from 'lucide-react'
+
+// Estimated hours per condo size
+const SIZE_HOURS = { 'Studio': 1.5, '3½': 2, '4½': 2.5, '5½': 3 }
+const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+function StatCard({ icon, label, value, sub, accent }) {
+  return (
+    <div style={{
+      background: accent ? 'var(--brown-light)' : 'var(--bg-card)',
+      border: `1px solid ${accent ? 'rgba(184,147,90,0.35)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-sm)', padding: '14px 16px',
+    }}>
+      <p style={{ fontSize: 22, marginBottom: 4 }}>{icon}</p>
+      <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 600, color: accent ? 'var(--brown)' : 'var(--text)', lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>{label}</p>
+      {sub && <p style={{ fontSize: 11, color: 'var(--brown)', marginTop: 2 }}>{sub}</p>}
+    </div>
+  )
+}
+
+function StatsView({ completedBookings, reviews, profile }) {
+  const now = new Date()
+  const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0)
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const weekJobs = completedBookings.filter(b => b.date && new Date(b.date) >= startOfWeek)
+  const monthJobs = completedBookings.filter(b => b.date && new Date(b.date) >= startOfMonth)
+
+  const weekRevenue = Math.round(weekJobs.reduce((s, b) => s + (b.price || 0) * 0.8, 0))
+  const monthRevenue = Math.round(monthJobs.reduce((s, b) => s + (b.price || 0) * 0.8, 0))
+  const totalRevenue = Math.round(completedBookings.reduce((s, b) => s + (b.price || 0) * 0.8, 0))
+  const weekHours = weekJobs.reduce((s, b) => s + (SIZE_HOURS[b.size] || 2), 0).toFixed(1)
+
+  // Best day of week this month
+  const dayCounts = Array(7).fill(0)
+  monthJobs.forEach(b => { if (b.date) dayCounts[new Date(b.date).getDay()]++ })
+  const bestDayIdx = dayCounts.indexOf(Math.max(...dayCounts))
+  const bestDay = monthJobs.length > 0 ? DAY_NAMES[bestDayIdx] : '—'
+
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) : 0
+  const avgRatingStr = reviews.length > 0 ? avgRating.toFixed(1) : '—'
+
+  // Account age in days
+  const createdAt = profile?.onboardingCompletedAt ? new Date(profile.onboardingCompletedAt) : null
+  const accountDays = createdAt ? Math.floor((now - createdAt) / 86400000) : 0
+
+  const badges = [
+    avgRating >= 4.8 && reviews.length >= 5 && { icon: '⭐', label: 'Top Prestataire', desc: 'Note ≥ 4.8' },
+    weekJobs.length >= 5                      && { icon: '🔥', label: 'En feu',          desc: '5+ jobs cette semaine' },
+    accountDays >= 30                         && { icon: '💎', label: 'Fidèle',           desc: 'Actif depuis 30+ jours' },
+    profile?.status === 'active'              && { icon: '🏆', label: 'Vérifié',          desc: 'Dossier approuvé' },
+  ].filter(Boolean)
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px' }}>
+
+      {/* Badges */}
+      {badges.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 11, color: 'var(--brown)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Badges</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {badges.map(b => (
+              <div key={b.label} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'var(--brown-light)', border: '1px solid rgba(184,147,90,0.35)',
+                borderRadius: 20, padding: '6px 12px',
+              }}>
+                <span style={{ fontSize: 16 }}>{b.icon}</span>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--brown)', lineHeight: 1.2 }}>{b.label}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>{b.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cette semaine */}
+      <p style={{ fontSize: 11, color: 'var(--brown)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Cette semaine</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
+        <StatCard icon="✅" label="Jobs" value={weekJobs.length} accent />
+        <StatCard icon="💰" label="Revenus" value={`${weekRevenue}$`} sub="80% des missions" accent />
+        <StatCard icon="⏱️" label="Heures est." value={`${weekHours}h`} accent />
+      </div>
+
+      {/* Ce mois */}
+      <p style={{ fontSize: 11, color: 'var(--brown)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Ce mois</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
+        <StatCard icon="📅" label="Jobs" value={monthJobs.length} />
+        <StatCard icon="💵" label="Revenus" value={`${monthRevenue}$`} />
+        <StatCard icon="🗓️" label="Meilleur jour" value={bestDay} />
+      </div>
+
+      {/* Depuis le début */}
+      <p style={{ fontSize: 11, color: 'var(--brown)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Depuis le début</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+        <StatCard icon="🏅" label="Total jobs" value={completedBookings.length} />
+        <StatCard icon="🏦" label="Total revenus" value={`${totalRevenue}$`} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+        <StatCard icon="⭐" label="Note moyenne" value={avgRatingStr} sub={reviews.length > 0 ? `${reviews.length} avis` : ''} />
+        <StatCard icon="💬" label="Avis reçus" value={reviews.length} />
+      </div>
+
+      {completedBookings.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)', fontSize: 13 }}>
+          Complétez votre première mission pour voir vos statistiques.
+        </div>
+      )}
+    </div>
+  )
+}
 
 const STEPS = [
   { key:'Assigned',     label:'Mission acceptée',  desc:"En route vers l'adresse" },
@@ -30,9 +143,10 @@ export default function WorkerPage() {
   const [photoBefore, setPhotoBefore] = useState(0)
   const [photoAfter, setPhotoAfter] = useState(0)
   const [workerLocation, setWorkerLocation] = useState(null)
-  const [mobileView, setMobileView] = useState('list') // 'list' or 'map'
+  const [mobileView, setMobileView] = useState('list') // 'list' | 'map' | 'stats'
   const [showChat, setShowChat] = useState(false)
   const [reviews, setReviews] = useState([])
+  const [completedBookings, setCompletedBookings] = useState([])
 
   function notify(msg) { setToast({ show:true, msg }); setTimeout(()=>setToast({ show:false, msg:'' }), 3000) }
 
@@ -49,7 +163,8 @@ export default function WorkerPage() {
     const u1 = listenAvailableBookings(setJobs)
     const u2 = listenWorkerActiveBooking(profile.uid, setActiveJob)
     const u3 = listenPrestataireReviews(profile.uid, setReviews)
-    return () => { u1(); u2(); u3() }
+    const u4 = listenWorkerCompletedBookings(profile.uid, setCompletedBookings)
+    return () => { u1(); u2(); u3(); u4() }
   }, [profile])
 
   useEffect(() => {
@@ -139,6 +254,9 @@ export default function WorkerPage() {
           </button>
           <button onClick={() => setMobileView('map')} style={{ flex:1, padding:'8px', borderRadius:8, border:'none', background: mobileView==='map' ? 'var(--brown)' : 'var(--bg-section)', color: mobileView==='map' ? 'white' : 'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             <Map size={14}/> Carte
+          </button>
+          <button onClick={() => setMobileView('stats')} style={{ flex:1, padding:'8px', borderRadius:8, border:'none', background: mobileView==='stats' ? 'var(--brown)' : 'var(--bg-section)', color: mobileView==='stats' ? 'white' : 'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            📊 Stats
           </button>
         </div>
       )}
@@ -230,6 +348,11 @@ export default function WorkerPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Stats view */}
+      {!activeJob && mobileView==='stats' && (
+        <StatsView completedBookings={completedBookings} reviews={reviews} profile={profile} />
       )}
 
       {/* Map view */}

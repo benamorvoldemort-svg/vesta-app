@@ -15,6 +15,15 @@ export function listenClientBookings(clientId, cb) {
   return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
 }
 
+export function listenWorkerCompletedBookings(workerId, cb) {
+  const q = query(
+    collection(db, 'bookings'),
+    where('workerId', '==', workerId),
+    where('status', '==', 'Completed')
+  )
+  return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+}
+
 export function listenWorkerActiveBooking(workerId, cb) {
   const q = query(collection(db, 'bookings'), where('workerId', '==', workerId), where('status', 'in', ['Assigned', 'InProgress']))
   return onSnapshot(q, snap => {
