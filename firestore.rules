@@ -6,57 +6,68 @@ service cloud.firestore {
     function isAuth() {
       return request.auth != null;
     }
-    function isAdmin() {
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+    function userData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
+
+    function isAdmin() {
+      return isAuth() && userData().role == 'admin';
+    }
+
     function isOwner(uid) {
       return isAuth() && request.auth.uid == uid;
     }
 
+    // Active prestataire: role == prestataire AND status == active
+    function isActivePrestataire() {
+      return isAuth()
+        && userData().role == 'prestataire'
+        && userData().status == 'active';
+    }
+
     // ── Users ─────────────────────────────────────────────────
     match /users/{uid} {
-      // Any authenticated user can read their own profile
       allow read: if isOwner(uid) || isAdmin();
 
-      // Only owner can write — but role is immutable after creation
       allow create: if isOwner(uid);
-      allow update: if isOwner(uid)
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.uid  == resource.data.uid;
 
-      // Admin can update anything (approve/reject prestataires)
-      allow update: if isAdmin();
+      // Owner can update own profile, but role and uid are immutable
+      allow update: if (isOwner(uid)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.uid  == resource.data.uid)
+        || isAdmin();
+
       allow delete: if isAdmin();
     }
 
     // ── Bookings ──────────────────────────────────────────────
     match /bookings/{bookingId} {
-      // Client sees only their own bookings
-      // Prestataire sees Requested bookings + bookings assigned to them
-      // Admin sees all
-      allow read: if isAdmin()
-        || (isAuth() && resource.data.clientId   == request.auth.uid)
-        || (isAuth() && resource.data.workerId   == request.auth.uid)
-        || (isAuth() && resource.data.status     == 'Requested'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'prestataire'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active');
 
-      // Only authenticated clients can create bookings
+      // Read rules:
+      // - Admin reads everything
+      // - Client reads their own bookings
+      // - Prestataire reads bookings assigned to them
+      // - Active prestataire reads ALL bookings (needed for listenAvailableBookings query)
+      allow read: if isAdmin()
+        || (isAuth() && resource.data.clientId == request.auth.uid)
+        || (isAuth() && resource.data.workerId == request.auth.uid)
+        || isActivePrestataire();
+
+      // Only clients can create a booking for themselves
       allow create: if isAuth()
         && request.resource.data.clientId == request.auth.uid
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'client';
+        && userData().role == 'client';
 
-      // Client can cancel their own booking (set status to 'cancelled')
+      // Client can update their own booking (cancel, stop recurrence)
       allow update: if isAuth()
         && resource.data.clientId == request.auth.uid
         && request.resource.data.clientId == resource.data.clientId;
 
-      // Active prestataire can accept, start, complete, add photos
-      allow update: if isAuth()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'prestataire'
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+      // Active prestataire can accept, start, complete, upload photos
+      allow update: if isActivePrestataire();
 
-      // Admin can update anything
+      // Admin can update or delete anything
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -65,17 +76,15 @@ service cloud.firestore {
     match /bookings/{bookingId}/messages/{msgId} {
       allow read, write: if isAuth() && (
         isAdmin()
-        || get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId   == request.auth.uid
-        || get(/databases/$(database)/documents/bookings/$(bookingId)).data.workerId   == request.auth.uid
+        || get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId  == request.auth.uid
+        || get(/databases/$(database)/documents/bookings/$(bookingId)).data.workerId  == request.auth.uid
       );
     }
 
     // ── Reviews ───────────────────────────────────────────────
     match /reviews/{reviewId} {
-      // Anyone authenticated can read reviews
       allow read: if isAuth();
 
-      // Only the client of the booking can create a review
       allow create: if isAuth()
         && request.resource.data.clientId == request.auth.uid;
 
