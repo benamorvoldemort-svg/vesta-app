@@ -4,11 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import { createBooking, listenClientBookings, cancelBooking, stopRecurrence } from '../firebase/bookingService'
 import { logoutUser } from '../firebase/authService'
 import { Card, Button, Input, Select, SectionLabel, StatusTracker, Badge, Toast, Header, PriceTag, Divider } from '../components/ui'
-
-const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 import ChatDrawer from '../components/ChatDrawer'
 import ReviewModal from '../components/ReviewModal'
 import Lightbox from '../components/Lightbox'
+import { useToast } from '../hooks/useToast'
+
+const createCheckoutSession = () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 1200))
 
 const SIZES = [{ label:'Studio', price:109 }, { label:'3½', price:129 }, { label:'4½', price:149 }, { label:'5½', price:189 }]
 const RECURRENCES = [
@@ -43,7 +44,7 @@ export default function ClientPage() {
   const [extras, setExtras] = useState({})
   const [form, setForm] = useState({ address:'', postalCode:'', date:'', time:'10:00' })
   const [paying, setPaying] = useState(false)
-  const [toast, setToast] = useState({ show:false, msg:'' })
+  const { toast, notify } = useToast()
   const [chatBookingId, setChatBookingId] = useState(null)
   const [reviewBooking, setReviewBooking] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
@@ -55,7 +56,6 @@ export default function ClientPage() {
   const total = baseTotal - discount
 
   useEffect(() => { if (!profile) return; return listenClientBookings(profile.uid, setBookings) }, [profile])
-  function notify(msg) { setToast({ show:true, msg }); setTimeout(() => setToast({ show:false, msg:'' }), 3000) }
 
   async function handleCancel(bookingId) {
     const booking = bookings.find(b => b.id === bookingId)
@@ -143,7 +143,7 @@ export default function ClientPage() {
                 <p style={{ fontSize:48, marginBottom:16 }}>🧹</p>
                 <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontStyle:'italic', fontSize:24, marginBottom:8 }}>Aucune réservation</h3>
                 <p style={{ color:'var(--text-muted)', fontSize:13, marginBottom:24 }}>Réservez votre premier ménage</p>
-                <Button onClick={() => setView('new')}>Book Now</Button>
+                <Button onClick={() => setView('new')}>Réserver maintenant</Button>
               </Card>
             ) : bookings.map((b, i) => (
               <Card key={b.id} className={`stagger-${Math.min(i+1,5)} animate-fade-up`}>

@@ -7,6 +7,7 @@ import { sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../firebase/config'
 import { uploadPhoto } from '../firebase/photoService'
 import { Card, Button, Input, SectionLabel, Divider, Toast } from '../components/ui'
+import { useToast } from '../hooks/useToast'
 
 export default function ProfilePage() {
   const { profile } = useAuth()
@@ -19,12 +20,10 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [resetSent, setResetSent] = useState(false)
-  const [toast, setToast]         = useState({ show: false, msg: '' })
+  const { toast, notify } = useToast()
   const fileRef = useRef()
 
   const isPrestataire = profile?.role === 'prestataire' || profile?.role === 'worker'
-
-  function notify(msg) { setToast({ show: true, msg }); setTimeout(() => setToast({ show: false, msg: '' }), 3000) }
 
   async function handlePhotoChange(e) {
     const file = e.target.files[0]

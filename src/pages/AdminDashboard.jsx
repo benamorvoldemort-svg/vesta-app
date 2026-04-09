@@ -5,6 +5,7 @@ import { listenPrestataires, listenClients, updatePrestataire } from '../firebas
 import { listenAllReviews } from '../firebase/reviewService'
 import { logoutUser } from '../firebase/authService'
 import { Card, Badge, SectionLabel, Toast, Header, PriceTag, Divider } from '../components/ui'
+import { useToast } from '../hooks/useToast'
 
 const STATUS_BADGE = {
   Requested: 'blue', Assigned: 'gold', InProgress: 'teal',
@@ -37,10 +38,8 @@ export default function AdminDashboard() {
   const [reviews, setReviews]           = useState([])
   const [tab, setTab]                   = useState('overview')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [toast, setToast]               = useState({ show: false, msg: '' })
+  const { toast, notify } = useToast()
   const [rejectionInputs, setRejectionInputs] = useState({}) // uid → reason text
-
-  function notify(msg) { setToast({ show: true, msg }); setTimeout(() => setToast({ show: false, msg: '' }), 3000) }
 
   useEffect(() => {
     const u1 = listenAllBookings(setBookings)

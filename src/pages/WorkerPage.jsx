@@ -9,7 +9,8 @@ import { Card, Button, Badge, SectionLabel, StatusTracker, Toast, Header, PriceT
 import VestaMap from '../components/VestaMap'
 import ChatDrawer from '../components/ChatDrawer'
 import PhotoUploader from '../components/PhotoUploader'
-import { Camera, List, Map } from 'lucide-react'
+import { List, Map } from 'lucide-react'
+import { useToast } from '../hooks/useToast'
 
 // Estimated hours per condo size
 const SIZE_HOURS = { 'Studio': 1.5, '3½': 2, '4½': 2.5, '5½': 3 }
@@ -139,16 +140,12 @@ export default function WorkerPage() {
   const [activeJob, setActiveJob] = useState(null)
   const [selectedJob, setSelectedJob] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState({ show:false, msg:'' })
-  const [photoBefore, setPhotoBefore] = useState(0)
-  const [photoAfter, setPhotoAfter] = useState(0)
+  const { toast, notify } = useToast()
   const [workerLocation, setWorkerLocation] = useState(null)
   const [mobileView, setMobileView] = useState('list') // 'list' | 'map' | 'stats'
   const [showChat, setShowChat] = useState(false)
   const [reviews, setReviews] = useState([])
   const [completedBookings, setCompletedBookings] = useState([])
-
-  function notify(msg) { setToast({ show:true, msg }); setTimeout(()=>setToast({ show:false, msg:'' }), 3000) }
 
   useEffect(() => {
     if (!navigator.geolocation) return
@@ -160,7 +157,9 @@ export default function WorkerPage() {
 
   useEffect(() => {
     if (!profile) return
-    const u1 = listenAvailableBookings(setJobs)
+    const u1 = profile.disponible !== false
+      ? listenAvailableBookings(setJobs)
+      : (() => { setJobs([]); return () => {} })()
     const u2 = listenWorkerActiveBooking(profile.uid, setActiveJob)
     const u3 = listenPrestataireReviews(profile.uid, setReviews)
     const u4 = listenWorkerCompletedBookings(profile.uid, setCompletedBookings)
@@ -210,7 +209,7 @@ export default function WorkerPage() {
     setLoading(true)
     await completeBooking(activeJob.id)
     const next = await createNextRecurringBooking(activeJob)
-    setActiveJob(null); setPhotoBefore(0); setPhotoAfter(0)
+    setActiveJob(null)
     if (next) {
       notify(`Mission terminée! Prochain ménage créé le ${next.date} 🔄`)
     } else {
@@ -230,7 +229,9 @@ export default function WorkerPage() {
     </div>
   )
 
-  const missionStatus = !activeJob ? null : activeJob.status==='InProgress' && photoAfter>0 ? 'photos_after' : activeJob.status
+  const missionStatus = !activeJob ? null
+    : activeJob.status === 'InProgress' && (activeJob.photosAfter?.length > 0) ? 'photos_after'
+    : activeJob.status
 
   return (
     <div style={{ height:'100vh', background:'var(--bg)', display:'flex', flexDirection:'column' }}>
