@@ -19,11 +19,11 @@ service cloud.firestore {
       return isAuth() && request.auth.uid == uid;
     }
 
-    // Active prestataire: role == prestataire AND status == active
+    // Active prestataire: role == prestataire AND (status == active OR legacy approvalStatus == approved)
     function isActivePrestataire() {
       return isAuth()
         && userData().role == 'prestataire'
-        && userData().status == 'active';
+        && (userData().status == 'active' || userData().approvalStatus == 'approved');
     }
 
     // ── Users ─────────────────────────────────────────────────
